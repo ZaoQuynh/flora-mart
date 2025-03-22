@@ -4,8 +4,8 @@ import { Review } from "./Review";
 export interface OrderItem {
     id: number;
     product: Product;
-    qty: number;
     discounted: number;
+    qty: number;
     currentPrice: number;
-    review: Review;
+    review: Review | null;  
 }

@@ -38,7 +38,7 @@ export default function ProfileScreen() {
   }
 
   const navigateToOrders = () => {
-    router.push("/(profile)/orders");
+    router.push("/(order)/history");
   };
 
   const navigateToAddresses = () => {
