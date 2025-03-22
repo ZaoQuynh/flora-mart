@@ -146,7 +146,7 @@ const ProductDetailsScreen = () => {
             ))}
           </View>
 
-          {product.reviews.map((review, index) => (
+          {/* {product.reviews.map((review, index) => (
             <View key={index} style={styles.reviewItem}>
               <View style={styles.reviewHeader}>
                 <View style={styles.reviewUser}>
@@ -170,7 +170,7 @@ const ProductDetailsScreen = () => {
                 <Text style={styles.reviewText}>{review.commnent || 'Không có bình luận'}</Text>
               </View>
             </View>
-          ))}
+          ))} */}
 
         </View>
       </ScrollView>
