@@ -11,21 +11,27 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useCart } from "@/hooks/useCart";
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Product } from '@/models/Product';
 import { useDescriptionGroup } from '@/hooks/useDescriptionGroup';
 import { DescriptionGroup } from '@/models/DescriptionGroup';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Strings from '@/constants/Strings';
+import ToastHelper from '@/utils/ToastHelper';
 
 const ProductDetailsScreen = () => {
   const params = useLocalSearchParams();
   const navigation = useNavigation();  
   const route = useRoute();           
   const { handleGetDescriptionGroups } = useDescriptionGroup();
-  const [descriptionGroups, setDescriptionGroup] = useState<DescriptionGroup[]>([]); 
+  const [descriptionGroups, setDescriptionGroup] = useState<DescriptionGroup[] | null>(null);
+  const { handleAddToCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null); 
   const [newComment, setNewComment] = useState(''); 
+  const [cartId, setCartId] = useState<number | null>(null); 
 
   useEffect(() => {
     try {
@@ -37,19 +43,74 @@ const ProductDetailsScreen = () => {
       setProduct(null);
     }
   }, [params.product]);
-
+  
+  useEffect(() => {
+    const fetchCartId = async () => {
+      try {
+        const token = await AsyncStorage.getItem(Strings.AUTH.TOKEN);
+        if (!token) {
+          console.error("No auth token found");
+          return;
+        }
+  
+        const storedCartId = await AsyncStorage.getItem("cartId");
+        if (storedCartId) {
+          setCartId(Number(storedCartId));
+          return;
+        }
+  
+        const response = await fetch("http://localhost:8080/api/v1/cart/my-cart", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error("Failed to fetch cart ID");
+        }
+  
+        const data = await response.json();
+        setCartId(data.id);
+        await AsyncStorage.setItem("cartId", data.id.toString());
+  
+      } catch (error) {
+        console.error("Error fetching cart ID:", error);
+      }
+    };
+  
+    fetchCartId();
+  }, []);
+  
   useEffect(() => {
     const fetchDescriptionGroups = async () => {
       try {
-        const descriptionGroup = await handleGetDescriptionGroups();
+        const descriptionGroup = await handleGetDescriptionGroups();  
         setDescriptionGroup(descriptionGroup);
       } catch (error) {
         console.error("Lỗi khi lấy nhóm mô tả:", error);
       }
     };
-    
+  
     fetchDescriptionGroups();
-  }, [handleGetDescriptionGroups]);
+  }, []); 
+  
+
+  const handleCheckoutPress = () => {
+    try {
+      const response = handleAddToCart(product!!.id, cartId!!);
+      
+      if (!!response) {
+        router.push("/cart");
+      } else {
+        ToastHelper.showError('Lỗi thanh toán','Vui lòng nhập thử lại!')
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      alert("An error occurred during checkout.");
+    }
+  };
 
   if (!product) {
     return (
@@ -110,7 +171,7 @@ const ProductDetailsScreen = () => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Mô tả</Text>
-          {descriptionGroups.map((group, index) => (
+          {descriptionGroups&&descriptionGroups.map((group, index) => (
             <View key={index} style={styles.descriptionGroup}>
               <View style={styles.descriptionGroupHeader}>
                 <Ionicons 
@@ -177,7 +238,7 @@ const ProductDetailsScreen = () => {
 
       {/* Nút thêm vào giỏ hàng */}
       <View style={styles.bottomButton}>
-        <TouchableOpacity style={styles.addToCartButton}>
+        <TouchableOpacity style={styles.addToCartButton} onPress={handleCheckoutPress}>
           <Text style={styles.addToCartText}>Thêm vào giỏ hàng</Text>
         </TouchableOpacity>
       </View>

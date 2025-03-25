@@ -32,6 +32,21 @@ export const getCart = async () => {
     }
 };
 
+export const addToCart = async (productId: number, cartId: number) => {
+    try {
+        const data = {
+            productDTO: {id: productId},
+            cartDTO: { id: cartId }
+        };
+        const response = await api.post('/orderItem', data);
+        console.log("Successfully!!");
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching cart:", error);
+        throw error;
+    }
+};
+
 // Hàm thanh toán
 export const checkOut = async (cartId: number, address: string, type: number) => {
     try {

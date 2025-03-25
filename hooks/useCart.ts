@@ -1,4 +1,4 @@
-import { getCart, checkOut } from "@/scripts/cartApi";
+import { getCart, checkOut, addToCart } from "@/scripts/cartApi";
 import { useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Strings from "../constants/Strings";
@@ -29,30 +29,24 @@ export const useCart = () => {
         }
     };
 
-    // Hàm thêm sản phẩm vào giỏ hàng
-    // const handleAddToCart = async (customerId: number, productId: number, quantity: number) => {
-    //     setLoading(true);
-    //     setError(null); // Xóa lỗi trước đó (nếu có)
+    const handleAddToCart = async (productId: number, cartId: number) => {
+        setLoading(true);
+        setError(null);
     
-    //     try {
-    //         const token = await AsyncStorage.getItem(Strings.AUTH.TOKEN);
-    //         if (!token) {
-    //             throw new Error("No token found");
-    //         }
-    
-    //         // // Gọi API thêm sản phẩm vào giỏ hàng
-    //         // const response = await addToCart(customerId, productId, quantity);
-    //         // console.log("Response từ API:", response);
-    
-    //         setLoading(false);
-    //         return response;
-    //     } catch (err) {
-    //         setLoading(false);
-    //         setError(err.message || "Failed to add item to cart");
-    //         console.error("Error adding to cart:", err);
-    //         throw err;
-    //     }
-    // };
+        try {
+            const token = await AsyncStorage.getItem(Strings.AUTH.TOKEN);
+            if (!token) {
+                throw new Error("No token found");
+            }
+            const response = await addToCart(productId, cartId);
+            setLoading(false);
+        } catch (error) {
+            setLoading(false);
+            setError("Failed to add item to cart");
+            console.error("Error adding to cart:", error);
+            throw error;
+        }
+    };
     const handleCheckout = async (cartId: number, address: string, type: number) => {
         setLoading(true);
         try {
@@ -72,5 +66,5 @@ export const useCart = () => {
         }
     };
     
-    return { handleCheckout, handleGetItemsCart, loading, error, cartItems };
+    return { handleAddToCart, handleCheckout, handleGetItemsCart, loading, error, cartItems };
 };
