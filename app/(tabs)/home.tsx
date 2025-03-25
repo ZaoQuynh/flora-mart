@@ -69,10 +69,10 @@ export default function HomeScreen() {
       .then((theUser) => {
         if (theUser?.fullName) {
           setUser(theUser);
-          ToastHelper.showSuccess(
-            translation.loginSuccess || 'Login Success',
-            translation.welcomeBack + (theUser.fullName || 'User')
-          );
+          // ToastHelper.showSuccess(
+          //   translation.loginSuccess || 'Login Success',
+          //   translation.welcomeBack + (theUser.fullName || 'User')
+          // );
         }
       })
       .catch((error) => {
