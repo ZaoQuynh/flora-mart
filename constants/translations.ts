@@ -102,6 +102,10 @@ export const translations = {
     myOrders: "My Orders",
     myAddresses: "My Addresses",
     settings: "Settings",
+    myCart: "My Cart",
+    cartEmpty: "Cart Empty",
+    startShopping: "Start Shopping",
+    checkOut: "Chekout"
   },
   vi: {
     appName: "Flora Mart",
@@ -206,6 +210,10 @@ export const translations = {
     myOrders: "Đơn hàng của tôi",
     myAddresses: "Địa chỉ của tôi",
     settings: "Cài đặt",
+    myCart: "Giỏ hàng",
+    cartEmpty: "Giỏ hàng của bạn trống",
+    startShopping: "Bắt đầu mua sắm",
+    checkOut: "Thanh toán"
   },
   ko: {
     appName: " 플로라 마트", 
@@ -310,6 +318,10 @@ export const translations = {
     myOrders: "내 주문",
     myAddresses: "내 주소",
     settings: "설정",
+    myCart: "",
+    cartEmpty: "",
+    startShopping: "",
+    checkOut: ""
   },
 } as const;  
 

@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import useSettings from '@/hooks/useSettings'; 
+import Toast from 'react-native-toast-message';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -48,6 +49,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)/profile"/>
       </Stack>
       <StatusBar style="auto" />
+      <Toast/>
     </ThemeProvider>
   );
 }
