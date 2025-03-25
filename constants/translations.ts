@@ -229,12 +229,10 @@ export const translations = {
     myOrders: "Đơn hàng của tôi",
     myAddresses: "Địa chỉ của tôi",
     settings: "Cài đặt",
-<<<<<<< HEAD
     myCart: "Giỏ hàng",
     cartEmpty: "Giỏ hàng của bạn trống",
     startShopping: "Bắt đầu mua sắm",
-    checkOut: "Thanh toán"
-=======
+    checkOut: "Thanh toán",
     confirmCancel: "Xác nhận hủy",
     cancelOrderConfirmation: "Bạn có chắc chắn muốn hủy đơn hàng?",
     no: "Không",
@@ -254,7 +252,6 @@ export const translations = {
     loading: "Đang tải...",
     failedToLoadOrder: "Không thể tải đơn hàng",
     failedToRefresh: "Làm mới thất bại",
->>>>>>> 515b95bf95e06fb0f06e9b2978bdf5c29367668c
   },
   ko: {
     appName: " 플로라 마트", 
@@ -359,12 +356,10 @@ export const translations = {
     myOrders: "내 주문",
     myAddresses: "내 주소",
     settings: "설정",
-<<<<<<< HEAD
     myCart: "",
     cartEmpty: "",
     startShopping: "",
-    checkOut: ""
-=======
+    checkOut: "",
     confirmCancel: "취소 확인",
     cancelOrderConfirmation: "주문을 취소하시겠습니까?",
     no: "아니요",    
@@ -384,7 +379,6 @@ export const translations = {
     loading: "로드 중...",
     failedToLoadOrder: "주문 로드 실패",
     failedToRefresh: "새로 고침 실패",
->>>>>>> 515b95bf95e06fb0f06e9b2978bdf5c29367668c
   },
 } as const;  
 
