@@ -125,6 +125,8 @@ export const translations = {
     loading: "Loading...",
     failedToLoadOrder: "Failed to load order",
     failedToRefresh: "Failed to refresh",
+    recentlyViewed: "Recently Viewed",
+    noRecentlyViewed: "You have no Recently Viewed yet",
   },
   vi: {
     appName: "Flora Mart",
@@ -252,6 +254,8 @@ export const translations = {
     loading: "Đang tải...",
     failedToLoadOrder: "Không thể tải đơn hàng",
     failedToRefresh: "Làm mới thất bại",
+    recentlyViewed: "Đã xem gần đây",
+    noRecentlyViewed: "Bạn chưa có sản phẩm nào đã xem gần đây",
   },
   ko: {
     appName: " 플로라 마트", 
@@ -379,6 +383,8 @@ export const translations = {
     loading: "로드 중...",
     failedToLoadOrder: "주문 로드 실패",
     failedToRefresh: "새로 고침 실패",
+    recentlyViewed: "최근 본 상품",
+    noRecentlyViewed: "최근 본 상품이 없습니다",
   },
 } as const;  
 

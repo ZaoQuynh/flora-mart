@@ -41,6 +41,10 @@ export default function ProfileScreen() {
     router.push("/(order)/history");
   };
 
+  const navigateRecentViewed = () => {
+    router.push("/(products)/recentlyViewed");
+  }
+
   const navigateToAddresses = () => {
     router.push("/(profile)/addresses");
   };
@@ -91,6 +95,14 @@ export default function ProfileScreen() {
             <Ionicons name="bag-outline" size={24} color={colors.text3} />
             <Text style={[styles.menuItemText, { color: colors.text3 }]}>
               {translation.myOrders || 'My Orders'}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.text3} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={navigateRecentViewed}>
+            <Ionicons name="timer-outline" size={24} color={colors.text3} />
+            <Text style={[styles.menuItemText, { color: colors.text3 }]}>
+              {translation.recentlyViewed || 'Recently Viewed '}
             </Text>
             <Ionicons name="chevron-forward" size={20} color={colors.text3} />
           </TouchableOpacity>
