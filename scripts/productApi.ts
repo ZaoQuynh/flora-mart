@@ -29,3 +29,21 @@ export const getProducts = async () => {
       throw error;
   }
 }
+
+export const findTop10SimilarProducts = async (productId: number) => {
+  try {
+    const response = await api.get(`/product/similar/${productId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export const getProductByIds = async (ids: number[]) => {
+  try {
+    const response = await api.post('/product/get-by-ids', { ids });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}

@@ -19,11 +19,9 @@ export const useUser = () => {
             const response = await updateUserInfo(id, fullName, username, phoneNumber, avatar);
             console.log("Response từ API:", response);
     
-            // Lấy thông tin user hiện tại từ AsyncStorage
             const userJson = await AsyncStorage.getItem(Strings.AUTH.USER_INFO);
             if (!userJson) throw new Error("No user info found");
     
-            // Parse user hiện tại và cập nhật dữ liệu mới
             const currentUser: User = JSON.parse(userJson);
             const updatedUser = {
                 ...currentUser,
@@ -33,7 +31,6 @@ export const useUser = () => {
                 avatar
             };
     
-            // Lưu user mới vào AsyncStorage
             await AsyncStorage.setItem(Strings.AUTH.USER_INFO, JSON.stringify(updatedUser));
     
             setLoading(false);
