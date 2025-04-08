@@ -11,6 +11,7 @@ import {
   Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/FontAwesome";
 import CartItem from "@/components/ui/CartItem";
 import CheckOutItem from "@/components/ui/CheckOutItem";
 import useSettings from "@/hooks/useSettings";
@@ -20,14 +21,16 @@ import { useCart } from "@/hooks/useCart";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Strings from "@/constants/Strings";
 import { useNavigation } from "@react-navigation/native";
+import { useVoucher } from "@/hooks/useVoucher";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import ToastHelper from "@/utils/ToastHelper";
+import { Voucher } from "@/models/Voucher";
+import { TouchableWithoutFeedback } from "react-native";
 
 export default function CheckoutScreen() {
   const { translation, colors } = useSettings();
   const { userInfo } = useAuth();
-  const [user, setUser] = useState<User | null>(null);
   const { handleGetItemsCart, handleCheckout } = useCart();
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -36,6 +39,38 @@ export default function CheckoutScreen() {
   const [address, setAddress] = useState("");
   const [selectedMethod, setSelectedMethod] = useState("Choose payment method");
   const [modalVisible, setModalVisible] = useState(false);
+  const [voucherModalVisible, setVoucherModalVisible] = useState(false);
+  const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [voucherList, setVoucherList] = useState<Voucher[]>([]);
+  const { handleGetVouchers } = useVoucher();
+
+  useEffect(() => {
+    userInfo()
+      .then((theUser) => {
+        if (theUser?.fullName) {
+          setUser(theUser);
+        }
+      })
+      .catch((error) => {
+        console.error("Error getting user info:", error);
+      });
+  }, []);
+
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      if (!user?.id) return; // Chưa có user.id thì bỏ qua
+
+      try {
+        const vouchers = await handleGetVouchers(user.id);
+        setVoucherList(vouchers ?? []);
+      } catch (error) {
+        console.error("Error fetching vouchers:", error);
+      }
+    };
+
+    fetchVouchers();
+  }, [user]);
 
   useEffect(() => {
     const fetchCartItems = async () => {
@@ -87,20 +122,36 @@ export default function CheckoutScreen() {
     fetchCartItems();
   }, []);
 
+  const handleVoucherSelect = (voucher: Voucher) => {
+    if (selectedVoucher?.id === voucher.id) {
+      setSelectedVoucher(null);
+    } else {
+      setSelectedVoucher(voucher);
+    }
+  };
+
   const handleCheckoutPress = () => {
     const paymentType = selectedMethod === "COD (Cash on Delivery)" ? 0 : 1;
     if (!address.trim()) {
-      ToastHelper.showError('Lỗi thanh toán','Vui lòng nhập địa chỉ!!')
+      ToastHelper.showError("Lỗi thanh toán", "Vui lòng nhập địa chỉ!!");
       return;
     }
-  
+
     try {
-      const response = handleCheckout(cartId!!, address, paymentType);
-      
+      if (!cartId) throw new Error("Cart ID is required");
+      if (selectedVoucher && !selectedVoucher.id)
+        throw new Error("Voucher ID missing");
+      const response = handleCheckout(
+        cartId,
+        address,
+        paymentType,
+        selectedVoucher?.id ?? 0
+      );
+
       if (!!response) {
         router.push("/checkoutSuccess");
       } else {
-        ToastHelper.showError('Lỗi thanh toán','Vui lòng nhập thử lại!')
+        ToastHelper.showError("Lỗi thanh toán", "Vui lòng nhập thử lại!");
       }
     } catch (error) {
       console.error("Checkout error:", error);
@@ -113,8 +164,74 @@ export default function CheckoutScreen() {
     0
   );
 
+  const discountAmount = selectedVoucher
+    ? selectedVoucher.discount > 0
+      ? (selectedVoucher.discount / 100) * totalAmount
+      : selectedVoucher.discount
+    : 0;
+
+  const minOrderAmount = selectedVoucher?.minOrderAmount || 0;
+  const finalAmount = totalAmount - discountAmount;
+  const amountToPay = finalAmount >= minOrderAmount ? finalAmount : minOrderAmount;
+  const adjustedDiscountAmount = amountToPay > totalAmount ? 0 : discountAmount;
+  const finalAmountWithAdjustedDiscount = totalAmount - adjustedDiscountAmount;
+  const savedPrice = totalAmount -finalAmountWithAdjustedDiscount;
+
   return (
     <View style={styles.container}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={voucherModalVisible}
+        onRequestClose={() => setVoucherModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setVoucherModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={styles.bottomSheet}>
+                <TouchableOpacity
+                  style={styles.closeIcon}
+                  onPress={() => setVoucherModalVisible(false)}
+                >
+                  <Text style={styles.closeIconText}>✕</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.modalTitle}>Chọn Voucher</Text>
+                <FlatList
+                  data={voucherList}
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.voucherItem}
+                      onPress={() => handleVoucherSelect(item)}
+                    >
+                      <Text style={styles.voucherCode}>{item.code}</Text>
+                      <Text style={styles.voucherDesc}>{item.description}</Text>
+                      <Text style={styles.voucherDesc}>
+                        HSD:{" "}
+                        {new Date(item.endDate).toLocaleDateString("vi-VN")}
+                      </Text>
+
+                      <View
+                        style={[
+                          styles.radioButton,
+                          selectedVoucher?.id === item.id &&
+                            styles.radioButtonSelected,
+                        ]}
+                      >
+                        {selectedVoucher?.id === item.id && (
+                          <Icon name="check" size={15} color="green" />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       <View style={styles.cartContainer}>
         <Text style={[styles.headerText, { color: colors.text3 }]}>
           {translation.checkOut || "Checkout"}
@@ -140,19 +257,27 @@ export default function CheckoutScreen() {
         </View>
         <TouchableOpacity
           style={styles.voucherContainer}
-          // onPress={handleSelectVoucher}
+          onPress={() => setVoucherModalVisible(true)}
         >
-          <Text style={styles.voucherText}>Select vouchers </Text>
+          <Text style={styles.voucherText}>
+            {selectedVoucher
+              ? `Voucher: ${selectedVoucher.description}`
+              : "Select vouchers"}
+          </Text>
         </TouchableOpacity>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Address</Text>
-          <TextInput style={styles.input} placeholder="Enter your address" value={address} onChangeText={setAddress}/>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your address"
+            value={address}
+            onChangeText={setAddress}
+          />
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Payment method</Text>
 
-          {/* Nút chọn phương thức thanh toán */}
           <TouchableOpacity
             style={styles.paymentMethodButton}
             onPress={() => setModalVisible(true)}
@@ -161,7 +286,6 @@ export default function CheckoutScreen() {
             <Ionicons name="chevron-forward" size={20} color="gray" />
           </TouchableOpacity>
 
-          {/* Modal chọn phương thức thanh toán */}
           <Modal
             animationType="slide"
             transparent={true}
@@ -172,7 +296,6 @@ export default function CheckoutScreen() {
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Select Payment Method</Text>
 
-                {/* COD */}
                 <TouchableOpacity
                   style={styles.paymentOption}
                   onPress={() => {
@@ -183,7 +306,6 @@ export default function CheckoutScreen() {
                   <Text style={styles.optionText}>COD (Cash on Delivery)</Text>
                 </TouchableOpacity>
 
-                {/* MOMO */}
                 <TouchableOpacity
                   style={styles.paymentOption}
                   onPress={() => {
@@ -194,7 +316,6 @@ export default function CheckoutScreen() {
                   <Text style={styles.optionText}>MOMO (E-Wallet)</Text>
                 </TouchableOpacity>
 
-                {/* Close Button */}
                 <TouchableOpacity
                   onPress={() => setModalVisible(false)}
                   style={styles.closeButton}
@@ -207,12 +328,20 @@ export default function CheckoutScreen() {
         </View>
       </View>
       <View style={styles.footerContainer}>
-        <Text style={styles.totalPrice}>{totalAmount.toLocaleString()} đ</Text>
-        <TouchableOpacity style={styles.paymentButton} onPress={handleCheckoutPress}>
+        <View style={styles.priceInfoContainer}>
+          <Text style={styles.totalPrice}>
+            Total Payment: {finalAmountWithAdjustedDiscount.toLocaleString()} đ
+          </Text>
+          <Text style={styles.savedAmount}>Saved: {savedPrice.toLocaleString()} đ</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.paymentButton}
+          onPress={handleCheckoutPress}
+        >
           <Text style={styles.paymentText}>Payment</Text>
         </TouchableOpacity>
       </View>
-      <Toast/>
+      <Toast />
     </View>
   );
 }
@@ -397,11 +526,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
   paymentOption: {
     padding: 12,
     width: "100%",
@@ -419,10 +543,6 @@ const styles = StyleSheet.create({
     backgroundColor: "red",
     borderRadius: 5,
   },
-  closeButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
   voucherContainer: {
     backgroundColor: "#E0E0E0",
     padding: 12,
@@ -431,6 +551,76 @@ const styles = StyleSheet.create({
   voucherText: {
     fontSize: 16,
     fontWeight: "bold",
-    textAlign: "right",
+    textAlign: "left",
+  },
+  voucherMin: {
+    fontStyle: "italic",
+    fontSize: 12,
+    color: "#888",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end", // đẩy modal xuống cuối
+    backgroundColor: "rgba(0,0,0,0.3)", // nền mờ
+  },
+  bottomSheet: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "70%", // chiếm tối đa 70% màn hình
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  voucherItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: "#eee",
+  },
+  voucherCode: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  voucherDesc: {
+    color: "gray",
+    fontSize: 14,
+  },
+  closeIcon: {
+    position: "absolute",
+    top: 10,
+    right: 15,
+    zIndex: 10,
+  },
+  closeIconText: {
+    fontSize: 22,
+    color: "red",
+    fontWeight: "bold",
+  },
+  closeButtonText: {
+    color: "#007bff",
+    fontSize: 16,
+  },
+  radioButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "gray",
+    marginLeft: "auto",
+  },
+  radioButtonSelected: {
+    backgroundColor: "#E1EEBC",
+  },
+  priceInfoContainer: {
+    marginBottom: 10,
+    alignItems: 'flex-start', // hoặc 'center' nếu muốn căn giữa
+  },
+  
+  savedAmount: {
+    fontSize: 14,
+    color: 'green',
   },
 });
