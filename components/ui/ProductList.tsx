@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, Text, Pressable, Image, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Product } from '@/models/Product';
+import ProductCard from '@/components/ui/ProductCard'; // Import the ProductCard component
 
 interface ProductListProps {
   products: Product[];
@@ -9,11 +10,21 @@ interface ProductListProps {
   translation: any;
   categoryId?: string;
   searchQuery?: string;
+  title?: string;
+  initialSize?: number;
 }
 
-export default function ProductList({ products, colors, translation, categoryId, searchQuery }: ProductListProps) {
+export default function ProductList({
+  products,
+  colors,
+  translation,
+  categoryId,
+  searchQuery,
+  title = "Tất cả sản phẩm",
+  initialSize = 4,
+}: ProductListProps) {
   const router = useRouter();
-  const [visibleItemCount, setVisibleItemCount] = useState(4);
+  const [visibleItemCount, setVisibleItemCount] = useState(initialSize);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Sắp xếp và lọc sản phẩm
@@ -61,42 +72,15 @@ export default function ProductList({ products, colors, translation, categoryId,
   const displayedProducts = sortedAndFilteredProducts.slice(0, visibleItemCount);
   const hasMoreProducts = visibleItemCount < sortedAndFilteredProducts.length;
 
-  const renderProductItem = (product: Product, index: number) => {
-    const isEven = index % 2 === 0;
+  const renderEmpty = () => {
+    if (sortedAndFilteredProducts.length > 0) return null;
 
     return (
-      <Pressable 
-        key={product.id}
-        style={[
-          styles.productItem,
-          isEven ? styles.leftItem : styles.rightItem
-        ]} 
-        onPress={() => handleProductPress(product)}
-      >
-        <Image source={{ uri: product.plant.img }} style={styles.productImage} />
-        <View style={styles.productInfo}>
-          <Text style={[styles.productName, { color: colors.text2 }]} numberOfLines={1}>
-            {product.plant.name}
-          </Text>
-          <View style={styles.priceContainer}>
-            {product.discount > 0 ? (
-              <>
-                <Text style={[styles.discountedPrice, { color: colors.primary }]}>
-                  ${(product.price - product.discount).toFixed(2)}
-                </Text>
-                <Text style={styles.originalPrice}>${product.price.toFixed(2)}</Text>
-              </>
-            ) : (
-              <Text style={[styles.price, { color: colors.primary }]}>
-                ${product.price.toFixed(2)}
-              </Text>
-            )}
-          </View>
-          <Text style={[styles.stockText, { color: product.stockQty > 0 ? colors.success : colors.error }]}>
-            {product.stockQty > 0 ? 'In Stock' : 'Out of Stock'}
-          </Text>
-        </View>
-      </Pressable>
+      <View style={styles.emptyContainer}>
+        <Text style={[styles.emptyText, { color: colors.text2 }]}>
+          {translation.noProductsFound || "Không tìm thấy sản phẩm nào"}
+        </Text>
+      </View>
     );
   };
 
@@ -112,28 +96,26 @@ export default function ProductList({ products, colors, translation, categoryId,
     );
   };
 
-  const renderEmpty = () => {
-    if (sortedAndFilteredProducts.length > 0) return null;
-
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={[styles.emptyText, { color: colors.text2 }]}>
-          {translation.noProductsFound || "Không tìm thấy sản phẩm nào"}
-        </Text>
-      </View>
-    );
-  };
-
   return (
     <View style={styles.container}>
-      <Text style={[styles.sectionTitle, { color: colors.text2 }]}>
-        {translation.allProducts || "Tất cả sản phẩm"}
-      </Text>
+      {title && (
+        <Text style={[styles.sectionTitle, { color: colors.text2}]}>
+          {title}
+        </Text>
+      )}
       
       {renderEmpty()}
       
       <View style={styles.productsGrid}>
-        {displayedProducts.map((product, index) => renderProductItem(product, index))}
+        {displayedProducts.map((product) => (
+          <View key={product.id} style={styles.cardWrapper}>
+            <ProductCard 
+              product={product}
+              colors={colors}
+              onPress={() => handleProductPress(product)}
+            />
+          </View>
+        ))}
       </View>
 
       {isLoadingMore ? renderLoadMoreIndicator() : hasMoreProducts && (
@@ -153,70 +135,20 @@ export default function ProductList({ products, colors, translation, categoryId,
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 16,
-    paddingHorizontal: 16,
   },
   sectionTitle: {
+    marginBottom: 16,
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 16,
   },
   productsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  productItem: {
+  cardWrapper: {
     width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
     marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  leftItem: {
-    marginRight: '2%',
-  },
-  rightItem: {
-    marginLeft: '2%',
-  },
-  productImage: {
-    width: '100%',
-    height: 160,
-  },
-  productInfo: {
-    padding: 12,
-  },
-  productName: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  discountedPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  originalPrice: {
-    fontSize: 12,
-    textDecorationLine: 'line-through',
-    marginLeft: 6,
-  },
-  stockText: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 4,
   },
   loadMoreButton: {
     paddingVertical: 12,

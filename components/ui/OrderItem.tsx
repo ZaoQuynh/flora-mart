@@ -4,6 +4,7 @@ import { Order } from "@/models/Order";
 import { OrderEnum } from "@/constants/enums/OrderEnum";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { OrderItem as OrderItemModel} from "@/models/OrderItem";
 
 const orderStatusTranslations: { [key: string]: { [key: string]: string } } = {
   en: {
@@ -93,6 +94,13 @@ const OrderItem: React.FC<OrderItemProps> = ({
       params: { order: JSON.stringify(item) }
     });
   };
+
+  const navigateToReview = (item: OrderItemModel) => {
+    router.push({
+      pathname: "/(products)/review",
+      params: { orderItem: JSON.stringify(item) }
+    });
+  }
   
   // Hiển thị tiến trình đơn hàng
   const renderOrderProgress = () => {
@@ -227,6 +235,20 @@ const OrderItem: React.FC<OrderItemProps> = ({
                     </Text>
                   )}
                   <Text style={styles.currentPrice}>{item.currentPrice.toLocaleString()} đ</Text>
+                
+                  <TouchableOpacity style={styles.reviewButton}
+                          onPress={() => navigateToReview(item)}>
+                    {item.review === null && (
+                      <Text style={styles.reviewButtonText}>
+                        {language === "en" ? "Review" : language === "ko" ? "리뷰" : "Đánh giá"}
+                        </Text>
+                      ) }
+                  {item.review !== null && (
+                      <Text style={styles.detailButtonText}>
+                        {language === "en" ? "Review" : language === "ko" ? "리뷰" : "Xem Đánh giá"}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -491,6 +513,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#757575",
     fontWeight: "500",
+  },
+  reviewButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginLeft: 'auto',
+    backgroundColor: "#FFEB3B",
+  },
+  reviewButtonText: {
+    fontSize: 13,
+    color: "#000",
+    fontWeight: "500"
   },
 });
 

@@ -40,10 +40,12 @@ export default function RootLayout() {
         <Stack.Screen name="(profile)/changeContact"/>
         <Stack.Screen name="(products)/search"/>
         <Stack.Screen name="(products)/details"/>
-        <Stack.Screen name="(order)/history"/>
+        <Stack.Screen name="(products)/review"/>
+        <Stack.Screen name="(products)/recentlyViewed"/>
+        <Stack.Screen name="(order)/history(order)/history"/>
         <Stack.Screen name="(order)/details"/>
         <Stack.Screen name="(tabs)/_layout"/>
-        <Stack.Screen name="(tabs)/home"/>
+        <Stack.Screen name="(tabs)home/"/>
         <Stack.Screen name="(tabs)/explore"/>
         <Stack.Screen name="(tabs)/cart"/>
         <Stack.Screen name="(tabs)/favorites"/>

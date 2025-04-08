@@ -13,6 +13,11 @@ interface BestSellingProps {
 export default function BestSelling({ products, colors, translation }: BestSellingProps) {
   const router = useRouter();
 
+  // Lấy 10 sản phẩm có soldQty cao nhất
+  const topSellingProducts = products
+    .sort((a, b) => b.soldQty - a.soldQty) // Sắp xếp theo soldQty giảm dần
+    .slice(0, 10); // Lấy 10 sản phẩm đầu tiên
+
   const navigateToProductDetail = (item: Product) => {
     router.push({
       pathname: "/(products)/details",
@@ -26,7 +31,7 @@ export default function BestSelling({ products, colors, translation }: BestSelli
         {translation.bestselling || 'Bestselling Plants'}
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productsContainer}>
-        {products.map((product) => (
+        {topSellingProducts.map((product) => (
           <ProductCard
             key={product.id}
             product={product}
@@ -42,7 +47,6 @@ export default function BestSelling({ products, colors, translation }: BestSelli
 const styles = StyleSheet.create({
   sectionContainer: {
     marginTop: 26,
-    paddingHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 20,

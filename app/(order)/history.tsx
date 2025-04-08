@@ -4,37 +4,38 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useSettings from '@/hooks/useSettings';
-import { useAuth } from '@/hooks/useAuth';
 import { Order } from '@/models/Order';
 import OrderItem from "@/components/ui/OrderItem";
 import { useOrder } from '@/hooks/useOrder';
+import { useFocusEffect } from 'expo-router';
 
 export default function HistoryScreen() {
   const navigation = useNavigation();
   const {language, translation, colors } = useSettings();
-  const { userInfo } = useAuth();
   const {handleGetMyOrders, handleCancelOrder, handleReceiveOrder} = useOrder();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingOrderId, setLoadingOrderId] = useState<number | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
+  const fetchOrders = async () => {
+    setIsInitialLoading(true);
+    try {
+        const response = await handleGetMyOrders();
+        if (response) {
+            setOrders(response);
+        }
+    } catch (err) {
+        console.error("Error fetching orders:", err);
+    } finally {
+        setIsInitialLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchOrders = async () => {
-      setIsInitialLoading(true);
-      try {
-          const response = await handleGetMyOrders();
-          if (response) {
-              setOrders(response);
-          }
-      } catch (err) {
-          console.error("Error fetching orders:", err);
-      } finally {
-          setIsInitialLoading(false);
-      }
-    };
     fetchOrders();
   }, []);
+
 
   // Function to update orders after an action
   const updateOrderList = async () => {

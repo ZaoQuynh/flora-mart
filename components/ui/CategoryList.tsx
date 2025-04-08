@@ -121,7 +121,6 @@ const Categories: React.FC<CategoriesProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginTop: 24,
-    paddingHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 20,

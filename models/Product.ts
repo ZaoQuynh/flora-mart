@@ -7,4 +7,5 @@ export interface Product {
     discount: number;
     stockQty: number;
     isDeleted: boolean;
+    soldQty: number;
 }

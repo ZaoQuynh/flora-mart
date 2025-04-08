@@ -6,13 +6,11 @@ import BestsellingProducts from '@/components/ui/BestsellingProducts';
 import useSettings from '@/hooks/useSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { useAttribute } from '@/hooks/useAttribute';
-import ToastHelper from '@/utils/ToastHelper';
 import { User } from '@/models/User';
 import { Attribute } from '@/models/Attribute';
 import { Product } from '@/models/Product';
 import { useProduct } from '@/hooks/useProduct';
 import ProductList from '@/components/ui/ProductList';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const { language, theme, translation, colors } = useSettings();
@@ -135,12 +133,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f8f8',
+    marginBottom: 16,
   },
   scrollView: {
     flex: 1,
+    padding: 16,
   },
   welcomeSection: {
-    paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 16,
   },
