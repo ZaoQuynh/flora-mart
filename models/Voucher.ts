@@ -9,6 +9,6 @@ export interface Voucher {
     endDate: Date;
     type: VoucherType;
     description: string;
-    minOrderValue: number;
+    minOrderAmount: number;
     maxDiscount: number;
 }
