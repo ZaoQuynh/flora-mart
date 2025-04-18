@@ -47,7 +47,7 @@ export const useCart = () => {
             throw error;
         }
     };
-    const handleCheckout = async (cartId: number, address: string, type: number) => {
+    const handleCheckout = async (cartId: number, address: string, type: number, voucherId: number) => {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem(Strings.AUTH.TOKEN);
@@ -55,7 +55,7 @@ export const useCart = () => {
                 throw new Error("No token found");
             }
 
-            const response = await checkOut(cartId, address, type);
+            const response = await checkOut(cartId, address, type, voucherId);
             setCartItems(response);
             setLoading(false);
             return response;

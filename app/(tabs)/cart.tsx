@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import CartItem from "@/components/ui/CartItem";
-import ToastHelper from '@/utils/ToastHelper';
+import ToastHelper from "@/utils/ToastHelper";
 import useSettings from "@/hooks/useSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { User } from "@/models/User";
@@ -20,6 +20,7 @@ import Strings from "@/constants/Strings";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
+import { Product } from "@/models/Product";
 
 export default function CartScreen() {
   const { translation, colors } = useSettings();
@@ -30,35 +31,32 @@ export default function CartScreen() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const router = useRouter();
   const [cartId, setCartId] = useState<number | null>(null);
+  const [products, setProducts] = useState<Product[] | null>(null);
+  const [fetchCount, setFetchCount] = useState(0); // Đếm số lần fetch
 
   useEffect(() => {
     const fetchCartItems = async () => {
+      if (fetchCount >= 2) return; // Chỉ fetch tối đa 2 lần
+
       try {
         const token = await AsyncStorage.getItem(Strings.AUTH.TOKEN);
-
         if (!token) {
           console.error("No auth token found");
           return;
         }
 
-        const response = await fetch(
-          "http://localhost:8080/api/v1/cart/my-cart",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await fetch("http://localhost:8080/api/v1/cart/my-cart", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch data");
-        }
+        if (!response.ok) throw new Error("Failed to fetch data");
 
         const data = await response.json();
-
-        console.log("Fetched data:", data);
+        console.log(`Fetched data (Lần ${fetchCount + 1}):`, data);
 
         if (data.orderItems && Array.isArray(data.orderItems)) {
           const items = data.orderItems.map((item: any) => ({
@@ -68,25 +66,38 @@ export default function CartScreen() {
             quantity: item.qty,
             image: item.product?.plant.img,
           }));
+          const products = data.orderItems.map((item: any) => ({
+            id: item.product?.id,
+            plant: item.product?.plant,
+            price: item.product?.price,
+            discount: item.product?.discount,
+            stockQty: item.product?.stockQty,
+            isDeleted: item.product?.isDeleted,
+          }));
+          setProducts(products);
           setCartId(data.id);
           setCartItems(items);
         } else {
           console.error("orderItems is not an array:", data.orderItems);
         }
+
+        setFetchCount((prev) => prev + 1); // Tăng số lần fetch
       } catch (error) {
         console.error("Error fetching cart items:", error);
       }
     };
 
     fetchCartItems();
-  }, []);
+  }, [fetchCount]);
 
   const navigateCheckout = () => {
-    if(cartItems.length!=0){
+    if (cartItems.length != 0) {
       router.push("/checkout");
-    }
-    else{
-      ToastHelper.showError('Lỗi thanh toán', 'Giỏ hàng của bạn trống, vui lòng bổ xung!!');
+    } else {
+      ToastHelper.showError(
+        "Lỗi thanh toán",
+        "Giỏ hàng của bạn trống, vui lòng bổ xung!!"
+      );
     }
   };
 
@@ -106,7 +117,7 @@ export default function CartScreen() {
         productId: productId,
         quantity: newQuantity,
       };
-      console.log(JSON.stringify(requestBody, null, 2))
+      console.log(JSON.stringify(requestBody, null, 2));
       const response = await fetch(
         "http://localhost:8080/api/v1/cart/update-quantity",
         {
@@ -167,21 +178,30 @@ export default function CartScreen() {
       // Gửi API cập nhật số lượng
       updateCartQuantity(cartId, productId, currentQuantity - 1);
     } else {
-      removeItem(productId);
-      updateCartQuantity(cartId, productId, currentQuantity - 1);
+      removeItem(cartId, productId, currentQuantity);
     }
   };
 
-  const removeItem = async (cartItemId: number) => {
+  const removeItem = async (
+    cartId: number,
+    cartItemId: number,
+    currentQuantity: number
+  ) => {
     try {
       setCartItems((prevCart) =>
         prevCart.filter((item) => item.id !== cartItemId)
       );
-
+      updateCartQuantity(cartId, cartItemId, currentQuantity - currentQuantity);
       console.log("Removed item successfully!");
     } catch (error) {
       console.error("Error removing item:", error);
     }
+  };
+  const navigateToProductDetail = (item: Product) => {
+    router.push({
+      pathname: "/(products)/details",
+      params: { product: JSON.stringify(item) },
+    });
   };
 
   const totalAmount = cartItems.reduce(
@@ -210,7 +230,8 @@ export default function CartScreen() {
               {translation.cartEmpty || "Your cart is empty"}
             </Text>
             <TouchableOpacity
-              style={[styles.shopButton, { backgroundColor: colors.primary }]} onPress={() => router.push("/home")}
+              style={[styles.shopButton, { backgroundColor: colors.primary }]}
+              onPress={() => router.push("/home")}
             >
               <Text
                 style={[styles.shopButtonText, { color: colors.background }]}
@@ -222,16 +243,20 @@ export default function CartScreen() {
         ) : (
           <FlatList
             data={cartItems}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <CartItem
-                cartId={cartId!!}
-                item={item}
-                removeItem={removeItem}
-                decreaseQuantity={decreaseQuantity}
-                increaseQuantity={increaseQuantity}
-              />
-            )}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => {
+              const product = products?.find((p) => p.id === item.id);
+              return (
+                <CartItem
+                  cartId={cartId!!}
+                  item={item}
+                  removeItem={removeItem}
+                  decreaseQuantity={decreaseQuantity}
+                  increaseQuantity={increaseQuantity}
+                  onPress={() => product && navigateToProductDetail(product)}
+                />
+              );
+            }}
           />
         )}
 
@@ -251,7 +276,6 @@ export default function CartScreen() {
       </View>
       {/* <Toast/> */}
     </View>
-    
   );
 }
 

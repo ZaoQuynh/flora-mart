@@ -47,13 +47,14 @@ export const addToCart = async (productId: number, cartId: number) => {
     }
 };
 
-// Hàm thanh toán
-export const checkOut = async (cartId: number, address: string, type: number) => {
+
+export const checkOut = async (cartId: number, address: string, type: number, voucherId: number) => {
     try {
         const checkoutData = {
             cartDTO: { id: cartId },
             address: address,
-            type: type
+            type: type,
+            voucherId
         };
 
         const response = await api.post('/cart/check-out', checkoutData);
