@@ -23,7 +23,7 @@ export default function HistoryScreen() {
     try {
         const response = await handleGetMyOrders();
         if (response) {
-            setOrders(response);
+            setOrders(response.orders);
         }
     } catch (err) {
         console.error("Error fetching orders:", err);
@@ -42,7 +42,7 @@ export default function HistoryScreen() {
     try {
       const response = await handleGetMyOrders();
       if (response) {
-        setOrders(response);
+        setOrders(response.orders);
       }
     } catch (err) {
       console.error("Error updating orders:", err);

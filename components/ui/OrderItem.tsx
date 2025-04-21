@@ -1,10 +1,18 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  FlatList,
+  ActivityIndicator,
+} from "react-native";
 import { Order } from "@/models/Order";
 import { OrderEnum } from "@/constants/enums/OrderEnum";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { OrderItem as OrderItemModel} from "@/models/OrderItem";
+import { OrderItem as OrderItemModel } from "@/models/OrderItem";
 
 const orderStatusTranslations: { [key: string]: { [key: string]: string } } = {
   en: {
@@ -37,13 +45,27 @@ const orderStatusTranslations: { [key: string]: { [key: string]: string } } = {
 };
 
 // Màu sắc theo trạng thái
-const statusColors: { [key: string]: { background: string; text: string; icon: string } } = {
-  NEW: { background: "#E3F2FD", text: "#1976D2", icon: "ellipsis-horizontal-circle" },
-  CONFIRMED: { background: "#E8F5E9", text: "#388E3C", icon: "checkmark-circle" },
+const statusColors: {
+  [key: string]: { background: string; text: string; icon: string };
+} = {
+  NEW: {
+    background: "#E3F2FD",
+    text: "#1976D2",
+    icon: "ellipsis-horizontal-circle",
+  },
+  CONFIRMED: {
+    background: "#E8F5E9",
+    text: "#388E3C",
+    icon: "checkmark-circle",
+  },
   PREPARING: { background: "#FFF3E0", text: "#E64A19", icon: "construct" },
   SHIPPING: { background: "#E0F7FA", text: "#0097A7", icon: "bicycle" },
   SHIPPED: { background: "#F3E5F5", text: "#7B1FA2", icon: "cube" },
-  DELIVERED: { background: "#E8F5E9", text: "#388E3C", icon: "checkmark-done-circle" },
+  DELIVERED: {
+    background: "#E8F5E9",
+    text: "#388E3C",
+    icon: "checkmark-done-circle",
+  },
   CANCELED: { background: "#FFEBEE", text: "#D32F2F", icon: "close-circle" },
 };
 
@@ -55,53 +77,76 @@ interface OrderItemProps {
   isLoading?: boolean;
 }
 
-const OrderItem: React.FC<OrderItemProps> = ({ 
-  order, 
-  onCancel, 
-  onReceive, 
+const OrderItem: React.FC<OrderItemProps> = ({
+  order,
+  onCancel,
+  onReceive,
   language = "vi",
-  isLoading = false
+  isLoading = false,
 }) => {
   const router = useRouter();
-  
+
   const totalPrice = order.orderItems.reduce((total, item) => {
-    return total + (item.currentPrice * item.qty);
+    return total + item.discounted * item.qty;
   }, 0);
-  
+
+  let voucherPrice = 0;
+
+  if (order.vouchers && order.vouchers.length > 0) {
+    const voucher = order.vouchers[0]; // giả sử chỉ dùng 1 voucher
+    const discount = voucher.discount ?? 0; // phần trăm giảm, ví dụ: 0.1
+    const maxDiscount = voucher.maxDiscount ?? null;
+    const minOrderAmount = voucher.minOrderAmount ?? 0;
+
+    if (totalPrice >= minOrderAmount) {
+      let discountAmount = (totalPrice * discount) / 100;
+      if (maxDiscount !== null) {
+        voucherPrice = Math.min(discountAmount, maxDiscount);
+      } else {
+        voucherPrice = discountAmount;
+      }
+    }
+  }
+
+  const finalPrice = totalPrice - voucherPrice;
+
   const formatDate = (date: Date) => {
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const year = date.getFullYear();
-    
+
     return `${hours}:${minutes}| ${day}/${month}/${year}`;
   };
 
-  const getTranslatedStatus = (status: string, lang: "en" | "vi" | "ko"): string => {
+  const getTranslatedStatus = (
+    status: string,
+    lang: "en" | "vi" | "ko"
+  ): string => {
     return orderStatusTranslations[lang]?.[status] || status;
   };
 
-  const statusStyle = statusColors[order.status] || { 
-    background: "#F5F5F5", 
-    text: "#757575", 
-    icon: "help-circle" 
+  const statusStyle = statusColors[order.status] || {
+    background: "#F5F5F5",
+    text: "#757575",
+    icon: "help-circle",
   };
 
   const navigateToOrderDetails = (item: Order) => {
     router.push({
       pathname: "/(order)/details",
-      params: { order: JSON.stringify(item) }
+      params: { order: JSON.stringify(item) },
     });
   };
 
   const navigateToReview = (item: OrderItemModel) => {
     router.push({
       pathname: "/(products)/review",
-      params: { orderItem: JSON.stringify(item) }
+      params: { orderItem: JSON.stringify(item) },
     });
-  }
-  
+  };
+
   // Hiển thị tiến trình đơn hàng
   const renderOrderProgress = () => {
     const statuses = [
@@ -110,42 +155,54 @@ const OrderItem: React.FC<OrderItemProps> = ({
       OrderEnum.PREPARING,
       OrderEnum.SHIPPING,
       OrderEnum.SHIPPED,
-      OrderEnum.DELIVERED
+      OrderEnum.DELIVERED,
     ];
-    
+
     // Xác định bước hiện tại
     const currentStep = statuses.indexOf(order.status as OrderEnum);
-    
+
     // Nếu đơn hàng đã bị hủy, hiển thị biểu tượng hủy
     if (order.status === OrderEnum.CANCELED) {
       return (
         <View style={styles.canceledContainer}>
           <Ionicons name="close-circle" size={28} color="#D32F2F" />
-          <Text style={styles.canceledText}>{getTranslatedStatus(OrderEnum.CANCELED, language)}</Text>
+          <Text style={styles.canceledText}>
+            {getTranslatedStatus(OrderEnum.CANCELED, language)}
+          </Text>
         </View>
       );
     }
-    
+
     return (
       <View style={styles.progressContainer}>
         {statuses.map((status, index) => {
           const isActive = index <= currentStep;
           const isLast = index === statuses.length - 1;
-          
+
           return (
             <View key={status} style={styles.progressStep}>
-              <View style={[
-                styles.progressDot,
-                isActive ? { backgroundColor: "#4CAF50" } : { backgroundColor: "#E0E0E0" }
-              ]}>
-                {isActive && <Ionicons name="checkmark" size={14} color="white" />}
+              <View
+                style={[
+                  styles.progressDot,
+                  isActive
+                    ? { backgroundColor: "#4CAF50" }
+                    : { backgroundColor: "#E0E0E0" },
+                ]}
+              >
+                {isActive && (
+                  <Ionicons name="checkmark" size={14} color="white" />
+                )}
               </View>
-              
+
               {!isLast && (
-                <View style={[
-                  styles.progressLine,
-                  index < currentStep ? { backgroundColor: "#4CAF50" } : { backgroundColor: "#E0E0E0" }
-                ]} />
+                <View
+                  style={[
+                    styles.progressLine,
+                    index < currentStep
+                      ? { backgroundColor: "#4CAF50" }
+                      : { backgroundColor: "#E0E0E0" },
+                  ]}
+                />
               )}
             </View>
           );
@@ -153,7 +210,7 @@ const OrderItem: React.FC<OrderItemProps> = ({
       </View>
     );
   };
-  
+
   // Nếu đang tải, hiển thị chỉ báo tải
   if (isLoading) {
     return (
@@ -164,27 +221,42 @@ const OrderItem: React.FC<OrderItemProps> = ({
           </View>
           <View style={styles.dateContainer}>
             <Ionicons name="time-outline" size={14} color="#666" />
-            <Text style={styles.date}>{formatDate(new Date(order.createDate))}</Text>
+            <Text style={styles.date}>
+              {formatDate(new Date(order.createDate))}
+            </Text>
           </View>
         </View>
-        
-        <View style={[styles.statusContainer, { backgroundColor: statusStyle.background }]}>
-          <Ionicons name={statusStyle.icon as any} size={18} color={statusStyle.text} />
+
+        <View
+          style={[
+            styles.statusContainer,
+            { backgroundColor: statusStyle.background },
+          ]}
+        >
+          <Ionicons
+            name={statusStyle.icon as any}
+            size={18}
+            color={statusStyle.text}
+          />
           <Text style={[styles.statusText, { color: statusStyle.text }]}>
             {getTranslatedStatus(order.status, language)}
           </Text>
         </View>
-        
+
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color="#4CAF50" />
           <Text style={styles.loadingText}>
-            {language === "en" ? "Processing..." : language === "ko" ? "처리 중..." : "Đang xử lý..."}
+            {language === "en"
+              ? "Processing..."
+              : language === "ko"
+              ? "처리 중..."
+              : "Đang xử lý..."}
           </Text>
         </View>
       </View>
     );
   }
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -193,59 +265,87 @@ const OrderItem: React.FC<OrderItemProps> = ({
         </View>
         <View style={styles.dateContainer}>
           <Ionicons name="time-outline" size={14} color="#666" />
-          <Text style={styles.date}>{formatDate(new Date(order.createDate))}</Text>
+          <Text style={styles.date}>
+            {formatDate(new Date(order.createDate))}
+          </Text>
         </View>
       </View>
-      
+
       {/* Hiển thị trạng thái đơn hàng */}
-      <View style={[styles.statusContainer, { backgroundColor: statusStyle.background }]}>
-        <Ionicons name={statusStyle.icon as any} size={18} color={statusStyle.text} />
+      <View
+        style={[
+          styles.statusContainer,
+          { backgroundColor: statusStyle.background },
+        ]}
+      >
+        <Ionicons
+          name={statusStyle.icon as any}
+          size={18}
+          color={statusStyle.text}
+        />
         <Text style={[styles.statusText, { color: statusStyle.text }]}>
           {getTranslatedStatus(order.status, language)}
         </Text>
       </View>
-      
+
       {/* Hiển thị tiến trình đơn hàng */}
       {renderOrderProgress()}
-      
+
       <FlatList
         data={order.orderItems}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View>
-            <View style={styles.productRow}>      
+            <View style={styles.productRow}>
               <View style={styles.imageContainer}>
                 {item.product.plant.img ? (
-                  <Image source={{ uri: item.product.plant.img }} style={styles.image} />
+                  <Image
+                    source={{ uri: item.product.plant.img }}
+                    style={styles.image}
+                  />
                 ) : (
                   <View style={styles.placeholderImage} />
                 )}
               </View>
-              
+
               <View style={styles.productInfo}>
                 <View style={styles.nameAndQuantity}>
-                  <Text style={styles.productName}>{item.product.plant.name}</Text>
+                  <Text style={styles.productName}>
+                    {item.product.plant.name}
+                  </Text>
                   <Text style={styles.quantity}>x{item.qty}</Text>
                 </View>
-                
+
                 <View style={styles.priceContainer}>
                   {item.discounted > 0 && (
                     <Text style={styles.originalPrice}>
-                      {(item.currentPrice + item.discounted).toLocaleString()} đ
+                      {(item.currentPrice).toLocaleString()} đ
                     </Text>
                   )}
-                  <Text style={styles.currentPrice}>{item.currentPrice.toLocaleString()} đ</Text>
-                
-                  <TouchableOpacity style={styles.reviewButton}
-                          onPress={() => navigateToReview(item)}>
+                  <Text style={styles.currentPrice}>
+                    {item.discounted.toLocaleString()} đ
+                  </Text>
+
+                  <TouchableOpacity
+                    style={styles.reviewButton}
+                    onPress={() => navigateToReview(item)}
+                  >
                     {item.review === null && (
                       <Text style={styles.reviewButtonText}>
-                        {language === "en" ? "Review" : language === "ko" ? "리뷰" : "Đánh giá"}
-                        </Text>
-                      ) }
-                  {item.review !== null && (
+                        {language === "en"
+                          ? "Review"
+                          : language === "ko"
+                          ? "리뷰"
+                          : "Đánh giá"}
+                      </Text>
+                    )}
+                    {item.review !== null && (
                       <Text style={styles.detailButtonText}>
-                        {language === "en" ? "Review" : language === "ko" ? "리뷰" : "Xem Đánh giá"}
+                        {language === "en"
+                          ? "Review"
+                          : language === "ko"
+                          ? "리뷰"
+                          : "Xem Đánh giá"}
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -256,16 +356,32 @@ const OrderItem: React.FC<OrderItemProps> = ({
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
-      
+
       <View style={styles.totalContainer}>
-        <Text style={styles.totalLabel}>Tổng tiền:</Text>
-        <Text style={styles.totalText}>{totalPrice.toLocaleString()} đ</Text>
+        <View style={styles.row}>
+          <Text style={styles.totalLabel}>Tổng tiền hàng:</Text>
+          <Text style={styles.totalText}>{totalPrice.toLocaleString()} đ</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.totalLabel}>Ưu đãi:</Text>
+          <Text style={[styles.totalText, { color: "green" }]}>
+            -{voucherPrice.toLocaleString()} đ
+          </Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={[styles.totalLabel, { fontWeight: "bold" }]}>Thành tiền:</Text>
+          <Text
+            style={[styles.totalText, { fontWeight: "bold", color: "red" }]}
+          >
+            {finalPrice.toLocaleString()} đ
+          </Text>
+        </View>
       </View>
-      
+
       <View style={styles.buttonContainer}>
         {order.status === OrderEnum.NEW && (
-          <TouchableOpacity 
-            style={[styles.button, styles.refundButton]} 
+          <TouchableOpacity
+            style={[styles.button, styles.refundButton]}
             onPress={onCancel}
           >
             <Ionicons name="close-circle-outline" size={16} color="#F44336" />
@@ -274,17 +390,23 @@ const OrderItem: React.FC<OrderItemProps> = ({
         )}
 
         {order.status === OrderEnum.SHIPPED && (
-          <TouchableOpacity 
-            style={[styles.button, styles.receiveButton]} 
+          <TouchableOpacity
+            style={[styles.button, styles.receiveButton]}
             onPress={onReceive}
           >
-            <Ionicons name="checkmark-circle-outline" size={16} color="#8BC34A" />
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={16}
+              color="#8BC34A"
+            />
             <Text style={styles.receiveButtonText}>Xác nhận nhận hàng</Text>
           </TouchableOpacity>
         )}
-        
-        <TouchableOpacity style={styles.detailButton}
-            onPress={() => navigateToOrderDetails(order)}>
+
+        <TouchableOpacity
+          style={styles.detailButton}
+          onPress={() => navigateToOrderDetails(order)}
+        >
           <Text style={styles.detailButtonText}>Chi tiết</Text>
         </TouchableOpacity>
       </View>
@@ -439,22 +561,26 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   totalContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    paddingTop: 12,
-    marginTop: 12,
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    elevation: 2,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
   },
   totalLabel: {
     fontSize: 15,
-    color: "#757575",
+    color: '#757575',
   },
   totalText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#4CAF50",
+    fontSize: 15,
+    color: '#000',
   },
   buttonContainer: {
     flexDirection: "row",
@@ -518,13 +644,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
-    marginLeft: 'auto',
+    marginLeft: "auto",
     backgroundColor: "#FFEB3B",
   },
   reviewButtonText: {
     fontSize: 13,
     color: "#000",
-    fontWeight: "500"
+    fontWeight: "500",
   },
 });
 

@@ -16,6 +16,7 @@ export const useAuth = () => {
       if(data.accessToken){
         await AsyncStorage.setItem(Strings.AUTH.TOKEN, data.accessToken);
         await AsyncStorage.setItem(Strings.AUTH.USER_INFO, JSON.stringify(data.user));
+        await AsyncStorage.setItem(Strings.AUTH.USER_ID, JSON.stringify(data.user.id));
         return data
       }
     } catch (err) {
