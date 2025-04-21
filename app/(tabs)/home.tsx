@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { Text, View, StyleSheet, ScrollView, TextStyle } from 'react-native';
-import HomeHeader from '@/components/ui/HomeHeader';
-import CategoryList from '@/components/ui/CategoryList';
-import BestsellingProducts from '@/components/ui/BestsellingProducts';
-import useSettings from '@/hooks/useSettings';
-import { useAuth } from '@/hooks/useAuth';
-import { useAttribute } from '@/hooks/useAttribute';
-import { User } from '@/models/User';
-import { Attribute } from '@/models/Attribute';
-import { Product } from '@/models/Product';
-import { useProduct } from '@/hooks/useProduct';
-import ProductList from '@/components/ui/ProductList';
+import React, { useEffect, useState } from "react";
+import { Text, View, StyleSheet, ScrollView, TextStyle } from "react-native";
+import HomeHeader from "@/components/ui/HomeHeader";
+import CategoryList from "@/components/ui/CategoryList";
+import BestsellingProducts from "@/components/ui/BestsellingProducts";
+import useSettings from "@/hooks/useSettings";
+import { useAuth } from "@/hooks/useAuth";
+import { useAttribute } from "@/hooks/useAttribute";
+import { User } from "@/models/User";
+import { Attribute } from "@/models/Attribute";
+import { Product } from "@/models/Product";
+import { useProduct } from "@/hooks/useProduct";
+import ProductList from "@/components/ui/ProductList";
 
 export default function HomeScreen() {
   const { language, theme, translation, colors } = useSettings();
@@ -20,15 +20,15 @@ export default function HomeScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [categories, setCategories] = useState<Attribute[] | null>(null);
   const [products, setProducts] = useState<Product[] | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const textStyleH1v1: TextStyle = {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.text2,
   };
-  
+
   const textStyleH1v2: TextStyle = {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.text3,
   };
 
@@ -39,26 +39,26 @@ export default function HomeScreen() {
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
-        const attributes = await handleGetAttributes(); 
+        const attributes = await handleGetAttributes();
         setCategories(attributes);
       } catch (error) {
         console.error("Error fetching attributes:", error);
       }
     };
-  
+
     fetchAttributes();
   }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const products = await handleGetProducts(); 
+        const products = await handleGetProducts();
         setProducts(products);
       } catch (error) {
         console.error("Error fetching products:", error);
       }
     };
-  
+
     fetchProducts();
   }, []);
 
@@ -80,7 +80,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <HomeHeader 
+      <HomeHeader
         user={user}
         products={products || []}
         searchQuery={searchQuery}
@@ -88,23 +88,37 @@ export default function HomeScreen() {
         colors={colors}
         translation={translation}
       />
-      
+
       <ScrollView style={styles.scrollView}>
         <View style={styles.welcomeSection}>
           <View>
-            <Text style={[styles.welcomeText, { color: colors.text3 }, textStyleH1v1]}>
-              {translation.hello || 'Hello'},
+            <Text
+              style={[
+                styles.welcomeText,
+                { color: colors.text3 },
+                textStyleH1v1,
+              ]}
+            >
+              {translation.hello || "Hello"},
             </Text>
-            <Text style={[styles.welcomeText, { color: colors.text3 }, textStyleH1v2]}>
-              {user?.fullName || translation.guest || 'Guest'}!
+            <Text
+              style={[
+                styles.welcomeText,
+                { color: colors.text3 },
+                textStyleH1v2,
+              ]}
+            >
+              {user?.fullName || translation.guest || "Guest"}!
             </Text>
           </View>
-          <Text style={[styles.subtitleText, { color: colors.text2 }, textStyle]}>
-            {translation.findYourPlant || 'Find your perfect plant today'}
+          <Text
+            style={[styles.subtitleText, { color: colors.text2 }, textStyle]}
+          >
+            {translation.findYourPlant || "Find your perfect plant today"}
           </Text>
         </View>
 
-        <CategoryList 
+        <CategoryList
           categories={categories || []}
           products={products || []}
           colors={colors}
@@ -113,7 +127,7 @@ export default function HomeScreen() {
           textStyle={textStyle}
         />
 
-        <BestsellingProducts 
+        <BestsellingProducts
           products={products || []}
           colors={colors}
           translation={translation}
@@ -132,7 +146,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
     marginBottom: 16,
   },
   scrollView: {
@@ -145,7 +159,7 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 4,
   },
   subtitleText: {

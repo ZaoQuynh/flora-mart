@@ -35,6 +35,14 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
       params: { user: JSON.stringify(user) }
     });
   };
+  
+  
+  const navigateToNotification = () => {
+    router.push({
+      pathname: "/notification",
+      params: { user: JSON.stringify(user) },
+    });
+  };
 
   const navigateToSearch = () => {
     console.log('Searching for:', searchQuery);
@@ -75,7 +83,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
 
       <Button
         title=""
-        onPress={navigateToProfile}
+        onPress={navigateToNotification}
         color="#fff"
         icon={require('../../assets/images/notification-icon.png')}
         style={styles.circleButton}
