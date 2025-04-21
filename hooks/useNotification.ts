@@ -39,6 +39,12 @@ export const useNotification = (userId: string, onReceive?: (notification: Notif
             onReceive(notification);
           }
         });
+
+        client.subscribe("/topic/global-notifications", (message) => {
+          const notification: Notification = JSON.parse(message.body);
+          setNotifications((prev) => [notification, ...prev]);
+          if (onReceive) onReceive(notification);
+        });
       },
       onStompError: (frame) => {
         console.error("STOMP error", frame);
@@ -50,7 +56,6 @@ export const useNotification = (userId: string, onReceive?: (notification: Notif
 
     client.activate();
 
-    // Cleanup on unmount
     return () => {
       if (client.connected) {
         client.deactivate();
