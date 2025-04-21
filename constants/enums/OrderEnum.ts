@@ -7,3 +7,5 @@ export const OrderEnum = Object.freeze({
     DELIVERED: "DELIVERED",
     CANCELED: "CANCELED"
   });
+
+  export type OrderStatus = typeof OrderEnum[keyof typeof OrderEnum];

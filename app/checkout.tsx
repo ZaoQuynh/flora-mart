@@ -560,15 +560,15 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: "flex-end", // đẩy modal xuống cuối
-    backgroundColor: "rgba(0,0,0,0.3)", // nền mờ
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.3)",
   },
   bottomSheet: {
     backgroundColor: "#fff",
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "70%", // chiếm tối đa 70% màn hình
+    maxHeight: "70%",
   },
   modalTitle: {
     fontSize: 18,

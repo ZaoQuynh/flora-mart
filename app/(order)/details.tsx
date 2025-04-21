@@ -133,9 +133,25 @@ export default function OrderDetailScreen() {
     return total + item.qty;
   }, 0);
   
-  const totalDiscount = order.orderItems.reduce((total, item) => {
-    return total + (item.discounted * item.qty);
-  }, 0);
+  let voucherPrice = 0;
+
+  if (order.vouchers && order.vouchers.length > 0) {
+    const voucher = order.vouchers[0]; // giả sử chỉ dùng 1 voucher
+    const discount = voucher.discount ?? 0; // phần trăm giảm, ví dụ: 0.1
+    const maxDiscount = voucher.maxDiscount ?? null;
+    const minOrderAmount = voucher.minOrderAmount ?? 0;
+
+    if (totalPrice >= minOrderAmount) {
+      let discountAmount = (totalPrice * discount) / 100;
+      if (maxDiscount !== null) {
+        voucherPrice = Math.min(discountAmount, maxDiscount);
+      } else {
+        voucherPrice = discountAmount;
+      }
+    }
+  }
+
+  const finalPrice = totalPrice - voucherPrice;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -190,13 +206,19 @@ export default function OrderDetailScreen() {
                 </Text>
                 <Text style={[styles.summaryValue, { color: colors.text3 }]}>{totalItems}</Text>
               </View>
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: colors.text2 }]}>
+                  {language === "en" ? "Total Items" : language === "ko" ? "총 항목" : "Tổng tiền hàng"}:
+                </Text>
+                <Text style={[styles.summaryValue, { color: colors.text3 }]}>{totalPrice}</Text>
+              </View>
               
-              {totalDiscount > 0 && (
+              {voucherPrice > 0 && (
                 <View style={styles.summaryRow}>
                   <Text style={[styles.summaryLabel, { color: colors.text2 }]}>
                     {language === "en" ? "Discount" : language === "ko" ? "할인" : "Giảm giá"}:
                   </Text>
-                  <Text style={styles.discountValue}>-{totalDiscount.toLocaleString()} đ</Text>
+                  <Text style={styles.discountValue}>-{voucherPrice.toLocaleString()} đ</Text>
                 </View>
               )}
               
@@ -204,7 +226,7 @@ export default function OrderDetailScreen() {
                 <Text style={[styles.totalLabel, { color: colors.text3 }]}>
                   {language === "en" ? "Order Total" : language === "ko" ? "주문 총액" : "Tổng tiền"}:
                 </Text>
-                <Text style={styles.totalValue}>{totalPrice.toLocaleString()} đ</Text>
+                <Text style={styles.totalValue}>{finalPrice.toLocaleString()} đ</Text>
               </View>
             </View>
           </View>

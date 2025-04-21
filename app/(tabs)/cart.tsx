@@ -65,6 +65,7 @@ export default function CartScreen() {
             price: item.currentPrice,
             quantity: item.qty,
             image: item.product?.plant.img,
+            discount: item.discounted,
           }));
           const products = data.orderItems.map((item: any) => ({
             id: item.product?.id,
@@ -205,7 +206,7 @@ export default function CartScreen() {
   };
 
   const totalAmount = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + item.discount*item.quantity,
     0
   );
 

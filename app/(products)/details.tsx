@@ -25,6 +25,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProduct } from '@/hooks/useProduct';
 import ProductList from '@/components/ui/ProductList';
 import useSettings from '@/hooks/useSettings';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Strings from '@/constants/Strings';
 
 const ProductDetailsScreen = () => {
   const { language, theme, translation, colors } = useSettings();
@@ -32,7 +34,7 @@ const ProductDetailsScreen = () => {
   const navigation = useNavigation();            
   const { handleGetDescriptionGroups } = useDescriptionGroup();
   const [descriptionGroups, setDescriptionGroup] = useState<DescriptionGroup[] | null>(null);
-  const { handleAddToCart } = useCart();
+  const { handleAddToCart, handleGetCartId } = useCart();
   const [product, setProduct] = useState<Product | null>(null); 
   const [reviews, setReviews] = useState<Review[] | null>([]); 
   const [userId, setUserId] = useState<number | null>(null);
@@ -43,6 +45,7 @@ const ProductDetailsScreen = () => {
   const { handleAddToFavorites, handleRemoveFromFavorites, handleCheckFavorite } = useFavorite(); // Assuming you have these functions in your useReview hook
   const { handleFindTop10SimilarProducts, handleAddToRecentlyViewed } = useProduct();
   const [similarProducts, setSimilarProducts] = useState<Product[] | null>([]);
+  const [cartId, setCartId] = useState()
 
   const fetchReviews = async (product: Product) => {
     try {
@@ -141,46 +144,6 @@ const ProductDetailsScreen = () => {
     }
   }, [product, userId]);
   
-  
-  // useEffect(() => {
-  //   const fetchCartId = async () => {
-  //     try {
-  //       const token = await AsyncStorage.getItem(Strings.AUTH.TOKEN);
-  //       if (!token) {
-  //         console.error("No auth token found");
-  //         return;
-  //       }
-  
-  //       const storedCartId = await AsyncStorage.getItem("cartId");
-  //       if (storedCartId) {
-  //         setCartId(Number(storedCartId));
-  //         return;
-  //       }
-  
-  //       const response = await fetch("http://localhost:8080/api/v1/cart/my-cart", {
-  //         method: "GET",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       });
-  
-  //       if (!response.ok) {
-  //         throw new Error("Failed to fetch cart ID");
-  //       }
-  
-  //       const data = await response.json();
-  //       setCartId(data.id);
-  //       await AsyncStorage.setItem("cartId", data.id.toString());
-  
-  //     } catch (error) {
-  //       console.error("Error fetching cart ID:", error);
-  //     }
-  //   };
-  
-  //   fetchCartId();
-  // }, []);
-  
   useEffect(() => {
     const fetchDescriptionGroups = async () => {
       try {
@@ -193,11 +156,25 @@ const ProductDetailsScreen = () => {
   
     fetchDescriptionGroups();
   }, []); 
+
+  // useEffect(() => {
+  //   const fetchCart = async () => {
+  //     try {
+  //       const cart = await handleGetCartId();  
+  //       setCartId(cart.id);
+  //     } catch (error) {
+  //       console.error("Lỗi khi lấy cart id:", error);
+  //     }
+  //   };
+  
+  //   fetchCart();
+  // }, []); 
   
 
-  const handleCheckoutPress = () => {
+  const handleAddToCartPress = async () => {
     try {
-      const response = handleAddToCart(product!!.id, cartId!!);
+      const cartId = await handleGetCartId();
+      const response = handleAddToCart(product!!.id, cartId);
       
       if (!!response) {
         router.push("/cart");
@@ -351,7 +328,7 @@ const ProductDetailsScreen = () => {
 
       {/* Nút thêm vào giỏ hàng */}
       <View style={styles.bottomButton}>
-        <TouchableOpacity style={styles.addToCartButton} onPress={handleCheckoutPress}>
+        <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCartPress}>
           <Text style={styles.addToCartText}>Thêm vào giỏ hàng</Text>
         </TouchableOpacity>
       </View>

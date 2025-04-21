@@ -28,7 +28,7 @@ export default function ProductCard({ product, colors, onPress }: ProductCardPro
         />
         {product.discount > 0 && (
           <View style={[styles.discountBadge, { backgroundColor: colors.primary }]}>
-            <Text style={styles.discountText}>-{discountPercentage}%</Text>
+            <Text style={styles.discountText}>-{product.discount}%</Text>
           </View>
         )}
       </View>
@@ -46,7 +46,7 @@ export default function ProductCard({ product, colors, onPress }: ProductCardPro
           {product.discount > 0 ? (
             <>
               <Text style={[styles.discountedPrice, { color: colors.primary }]}>
-                ${(product.price - product.discount).toFixed(2)}
+                ${(product.price - (product.price)*(product.discount/100)).toFixed(2)}
               </Text>
               <Text style={[styles.originalPrice, { color: colors.text3 }]}>
                 ${product.price.toFixed(2)}

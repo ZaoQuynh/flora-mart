@@ -1,4 +1,4 @@
-import { getCart, checkOut, addToCart } from "@/scripts/cartApi";
+import { getCart, checkOut, addToCart, getCartId } from "@/scripts/cartApi";
 import { useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Strings from "../constants/Strings";
@@ -8,6 +8,7 @@ export const useCart = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [cartItems, setCartItems] = useState([]);
+    const [cartId, setCartId] = useState();
 
     const handleGetItemsCart = async () => {
         setLoading(true);
@@ -65,6 +66,26 @@ export const useCart = () => {
             throw err;
         }
     };
+
+    const handleGetCartId = async () => {
+        setLoading(true);
+        try {
+            const token = await AsyncStorage.getItem(Strings.AUTH.TOKEN);
+            if (!token) {
+                throw new Error("No token found");
+            }
+
+            const response = await getCartId();
+            console.log("cartId là: "+response)
+            setCartId(response);
+            setLoading(false);
+            return response;
+        } catch (err) {
+            setLoading(false);
+            setError("Failed to fetch cart items");
+            throw err;
+        }
+    };
     
-    return { handleAddToCart, handleCheckout, handleGetItemsCart, loading, error, cartItems };
+    return { handleAddToCart, handleCheckout, handleGetItemsCart, handleGetCartId, loading, error, cartItems };
 };
