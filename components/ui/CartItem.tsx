@@ -12,6 +12,7 @@ interface CartItemProps {
     image: string;
     price: number;
     quantity: number;
+    discount: number;
   };
   removeItem: (cartId: number, id: number, currentQuantity: number) => void;
   decreaseQuantity: (
@@ -43,7 +44,7 @@ const CartItem: React.FC<CartItemProps> = ({
         <View style={styles.itemInfo}>
           <Text style={styles.itemName}>{item.name}</Text>
           <Text style={styles.itemPrice}>
-            {(item.price * item.quantity).toLocaleString()} $
+            {(item.discount * item.quantity).toLocaleString()} $
           </Text>
         </View>
       </TouchableOpacity>

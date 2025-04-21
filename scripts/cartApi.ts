@@ -23,11 +23,23 @@ api.interceptors.request.use(async (config) => {
 
 export const getCart = async () => {
     try {
-        const response = await api.get('/cart/my-cart');
-        console.log("Successfully!!");
+        const response = await api.post('/cart/my-cart-id', );
+        console.log("Get cart successfully!!");
         return response.data;
     } catch (error) {
         console.error("Error fetching cart:", error);
+        throw error;
+    }
+};
+
+export const getCartId = async () => {
+    try {
+        const userId = await AsyncStorage.getItem(Strings.AUTH.USER_ID);
+        const response = await api.post('/cart/my-cart-id', userId);
+        console.log("Get cart id successfully!!");
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching cart id:", error);
         throw error;
     }
 };
@@ -39,10 +51,10 @@ export const addToCart = async (productId: number, cartId: number) => {
             cartDTO: { id: cartId }
         };
         const response = await api.post('/orderItem', data);
-        console.log("Successfully!!");
+        console.log("Add to cart successfully!!");
         return response.data;
     } catch (error) {
-        console.error("Error fetching cart:", error);
+        console.error("Error order item:", error);
         throw error;
     }
 };

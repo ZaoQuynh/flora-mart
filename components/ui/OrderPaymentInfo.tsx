@@ -63,9 +63,11 @@ const OrderPaymentInfo: React.FC<OrderPaymentInfoProps> = ({ payment, language }
   };
 
   // Format date according to language
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return "";
-    
+  
+    const parsedDate = new Date(date); // Ensures it's a Date object
+  
     const options: Intl.DateTimeFormatOptions = { 
       year: 'numeric', 
       month: 'long', 
@@ -75,11 +77,11 @@ const OrderPaymentInfo: React.FC<OrderPaymentInfoProps> = ({ payment, language }
     };
     
     if (language === "en") {
-      return date.toLocaleDateString('en-US', options);
+      return parsedDate.toLocaleDateString('en-US', options);
     } else if (language === "ko") {
-      return date.toLocaleDateString('ko-KR', options);
+      return parsedDate.toLocaleDateString('ko-KR', options);
     } else {
-      return date.toLocaleDateString('vi-VN', options);
+      return parsedDate.toLocaleDateString('vi-VN', options);
     }
   };
 
