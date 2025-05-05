@@ -1,223 +1,348 @@
 import React from "react";
-import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl, TouchableOpacity, StatusBar } from "react-native";
 import { useNotification } from "@/hooks/useNotification";
-import { useLocalSearchParams } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale"; // Vietnamese locale for date formatting
+import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/Colors";
 
 const NotificationScreen = () => {
   const { user } = useLocalSearchParams();
-
+  const [refreshing, setRefreshing] = React.useState(false);
+  const router = useRouter();
+  
   const parsedUser = user ? JSON.parse(user as string) : null;
   const userId = parsedUser?.id?.toString();
 
-  const notifications = useNotification(userId);
+  const { notifications, loading, error } = useNotification(userId);
 
-  // Hàm để định dạng thời gian thông báo
-  const getTimeDisplay = (timestamp) => {
-    if (!timestamp) return "";
-    
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) {
-      return "Hôm nay";
-    } else if (diffDays === 1) {
-      return "Hôm qua";
-    } else if (diffDays < 7) {
-      return `${diffDays} ngày trước`;
-    } else {
-      return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  // Format the date to relative time (e.g., "2 hours ago")
+  const formatNotificationDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return formatDistanceToNow(date, { addSuffix: true, locale: vi });
+    } catch (error) {
+      return "";
     }
   };
 
-  // Render mỗi mục thông báo
-  const renderNotificationItem = ({ item }) => {
-    // Xác định icon dựa trên loại thông báo
-    let iconName = "notifications";
-    let iconColor = "#4A90E2";
-    
-    if (item.type === "warning") {
-      iconName = "warning";
-      iconColor = "#FFC107";
-    } else if (item.type === "success") {
-      iconName = "check-circle";
-      iconColor = "#4CAF50";
-    } else if (item.type === "error") {
-      iconName = "error";
-      iconColor = "#F44336";
-    } else if (item.type === "info") {
-      iconName = "info";
-      iconColor = "#2196F3";
-    }
+  // Handle pull-to-refresh
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    // In a real implementation, you would re-fetch notifications here
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  }, []);
 
+  // Handle back button press
+  const handleBack = () => {
+    router.back();
+  };
+
+  if (error) {
     return (
-      <SafeAreaView>
-        <TouchableOpacity style={styles.notificationCard}>
-          <View style={styles.iconContainer}>
-            <MaterialIcons name={iconName} size={24} color={iconColor} />
-          </View>
-          <View style={styles.contentContainer}>
-            <View style={styles.headerRow}>
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.time}>{getTimeDisplay(item.timestamp)}</Text>
-            </View>
-            <Text style={styles.message}>{item.message}</Text>
-          </View>
-        </TouchableOpacity>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <Header handleBack={handleBack} />
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color={Colors.light.text2} />
+          <Text style={styles.errorText}>
+            Đã xảy ra lỗi khi tải thông báo
+          </Text>
+          <Text style={styles.errorDetail}>{error}</Text>
+        </View>
       </SafeAreaView>
     );
-  };
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.header}>Thông báo</Text>
-        <TouchableOpacity style={styles.settingsButton}>
-          <MaterialIcons name="settings" size={24} color="#555" />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="dark-content" />
+      <Header handleBack={handleBack} />
       
-      {notifications && notifications.length > 0 && (
-        <View style={styles.statsContainer}>
-          <Text style={styles.statsText}>
-            {notifications.length} thông báo
-          </Text>
-          <TouchableOpacity>
-            <Text style={styles.markAllButton}>Đánh dấu đã đọc</Text>
-          </TouchableOpacity>
+      {loading && !refreshing ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.light.button} />
+          <Text style={styles.loadingText}>Đang tải thông báo...</Text>
         </View>
+      ) : (
+        <FlatList
+          data={notifications}
+          keyExtractor={(item) => (item.id ? item.id.toString() : Math.random().toString())}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh} 
+              colors={[Colors.light.button]} 
+              tintColor={Colors.light.button}
+            />
+          }
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <NotificationItem item={item} formatDate={formatNotificationDate} />
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="notifications-off-outline" size={64} color={Colors.light.text2} />
+              <Text style={styles.empty}>Không có thông báo nào</Text>
+            </View>
+          }
+        />
       )}
-      
-      <FlatList
-        data={notifications}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={renderNotificationItem}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <MaterialIcons name="notifications-off" size={70} color="#CCCCCC" />
-            <Text style={styles.empty}>Không có thông báo nào</Text>
-            <Text style={styles.emptySubtitle}>Bạn sẽ nhận được thông báo khi có hoạt động mới</Text>
-          </View>
-        }
-      />
-    </View>
+    </SafeAreaView>
   );
+};
+
+// Header component with back button
+const Header = ({ handleBack }) => (
+  <View style={styles.header}>
+    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+      <Ionicons name="arrow-back" size={24} color={Colors.light.text2} />
+    </TouchableOpacity>
+    <Text style={styles.headerTitle}>Thông báo</Text>
+    <View style={styles.rightPlaceholder} />
+  </View>
+);
+
+// Notification item component
+const NotificationItem = ({ item, formatDate }) => (
+  <View style={styles.notificationCard}>
+    <View style={[styles.notificationIndicator, getIndicatorStyle(item.type)]} />
+    <View style={styles.notificationContent}>
+      <View style={styles.notificationHeader}>
+        <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+        {item.type && (
+          <View style={[styles.badge, getBadgeStyle(item.type)]}>
+            <Text style={styles.badgeText}>{getTypeLabel(item.type)}</Text>
+          </View>
+        )}
+      </View>
+      <Text style={styles.message} numberOfLines={2}>{item.message}</Text>
+      {item.date && (
+        <Text style={styles.date}>{formatDate(item.date)}</Text>
+      )}
+    </View>
+  </View>
+);
+
+// Helper function to get badge style based on notification type
+const getBadgeStyle = (type) => {
+  switch (type) {
+    case "ORDER":
+      return styles.orderBadge;
+    case "POST":
+      return styles.postBadge;
+    case "EVENT":
+      return styles.eventBadge;
+    case "REVIEW":
+      return styles.reviewBadge;
+    case "COMMENT":
+      return styles.commentBadge;
+    default:
+      return {};
+  }
+};
+
+// Helper function to get indicator style based on notification type
+const getIndicatorStyle = (type) => {
+  switch (type) {
+    case "ORDER":
+      return styles.orderIndicator;
+    case "POST":
+      return styles.postIndicator;
+    case "EVENT":
+      return styles.eventIndicator;
+    case "REVIEW":
+      return styles.reviewIndicator;
+    case "COMMENT":
+      return styles.commentIndicator;
+    default:
+      return styles.defaultIndicator;
+  }
+};
+
+// Helper function to get readable type label
+const getTypeLabel = (type) => {
+  switch (type) {
+    case "ORDER":
+      return "Đơn hàng";
+    case "POST":
+      return "Bài viết";
+    case "EVENT":
+      return "Sự kiện";
+    case "REVIEW":
+      return "Đánh giá";
+    case "COMMENT":
+      return "Bình luận";
+    default:
+      return type;
+  }
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
-  },
-  headerContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEEEEE",
+    backgroundColor: "#fff",
   },
   header: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#1A1A1A",
-  },
-  settingsButton: {
-    padding: 8,
-  },
-  statsContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#EEEEEE",
+    borderBottomColor: "#f0f0f0",
   },
-  statsText: {
-    fontSize: 14,
-    color: "#666666",
+  backButton: {
+    padding: 6,
   },
-  markAllButton: {
-    fontSize: 14,
-    color: "#4A90E2",
-    fontWeight: "500",
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: Colors.light.title,
   },
-  listContainer: {
+  rightPlaceholder: {
+    width: 24,
+  },
+  listContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 20,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    color: Colors.light.text2,
+    fontSize: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 100,
+  },
   notificationCard: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
+    flexDirection: 'row',
+    backgroundColor: "#ffffff",
+    marginBottom: 12,
     borderRadius: 12,
-    marginVertical: 6,
-    padding: 16,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
+    overflow: 'hidden',
   },
-  iconContainer: {
-    marginRight: 14,
-    alignItems: "center",
-    justifyContent: "center",
+  notificationIndicator: {
+    width: 4,
+    height: '100%',
   },
-  contentContainer: {
+  notificationContent: {
     flex: 1,
+    padding: 16,
   },
-  headerRow: {
+  notificationHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   title: {
     fontWeight: "600",
     fontSize: 16,
-    color: "#1A1A1A",
+    color: "#333",
     flex: 1,
-  },
-  time: {
-    fontSize: 12,
-    color: "#999999",
+    marginRight: 8,
   },
   message: {
     fontSize: 14,
-    color: "#444444",
+    color: Colors.light.text2,
+    marginTop: 4,
     lineHeight: 20,
   },
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 30,
-    marginTop: 40,
+  date: {
+    fontSize: 12,
+    color: Colors.light.text2,
+    marginTop: 8,
+    opacity: 0.8,
   },
   empty: {
-    marginTop: 16,
     fontSize: 16,
-    fontWeight: "500",
-    color: "#666666",
-  },
-  emptySubtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    color: "#999999",
+    fontStyle: "italic",
+    color: Colors.light.text2,
+    marginTop: 12,
     textAlign: "center",
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    color: "#333",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  errorDetail: {
+    fontSize: 14,
+    color: Colors.light.text2,
+    marginTop: 8,
+    textAlign: "center",
+  },
+  badge: {
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: "500",
+    color: "#fff",
+  },
+  // Badge colors
+  orderBadge: {
+    backgroundColor: "#FF9800",
+  },
+  postBadge: {
+    backgroundColor: "#2196F3",
+  },
+  eventBadge: {
+    backgroundColor: "#9C27B0",
+  },
+  reviewBadge: {
+    backgroundColor: "#F44336",
+  },
+  commentBadge: {
+    backgroundColor: "#607D8B",
+  },
+  // Indicator colors
+  orderIndicator: {
+    backgroundColor: "#FF9800",
+  },
+  postIndicator: {
+    backgroundColor: "#2196F3",
+  },
+  eventIndicator: {
+    backgroundColor: "#9C27B0", 
+  },
+  reviewIndicator: {
+    backgroundColor: "#F44336",
+  },
+  commentIndicator: {
+    backgroundColor: "#607D8B",
+  },
+  defaultIndicator: {
+    backgroundColor: Colors.light.button,
+  }
 });
 
 export default NotificationScreen;
