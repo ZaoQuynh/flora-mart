@@ -60,13 +60,14 @@ export const addToCart = async (productId: number, cartId: number) => {
 };
 
 
-export const checkOut = async (cartId: number, address: string, type: number, voucherId: number) => {
+export const checkOut = async (cartId: number, address: string, type: number, voucherId: number, phone: string) => {
     try {
         const checkoutData = {
             cartDTO: { id: cartId },
             address: address,
             type: type,
-            voucherId
+            voucherId,
+            phone: phone,
         };
 
         const response = await api.post('/cart/check-out', checkoutData);

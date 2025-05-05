@@ -147,6 +147,13 @@ const OrderItem: React.FC<OrderItemProps> = ({
     });
   };
 
+  const navigateToReviewAll = (item: Order) => {
+    router.push({
+      pathname: "/(products)/reviewall",
+      params: { orderItem: JSON.stringify(item) },
+    });
+  };
+
   // Hiển thị tiến trình đơn hàng
   const renderOrderProgress = () => {
     const statuses = [
@@ -256,7 +263,12 @@ const OrderItem: React.FC<OrderItemProps> = ({
       </View>
     );
   }
-
+  const hasReviewedAll = order.orderItems.every(
+    (item) => item.review !== null
+  );
+  const hasNotReviewedAll = order.orderItems.some(
+    (item) => item.review === null
+  );
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -319,14 +331,14 @@ const OrderItem: React.FC<OrderItemProps> = ({
                 <View style={styles.priceContainer}>
                   {item.discounted > 0 && (
                     <Text style={styles.originalPrice}>
-                      {(item.currentPrice).toLocaleString()} đ
+                      {item.currentPrice.toLocaleString()} đ
                     </Text>
                   )}
                   <Text style={styles.currentPrice}>
                     {item.discounted.toLocaleString()} đ
                   </Text>
 
-                  <TouchableOpacity
+                  {/* <TouchableOpacity
                     style={styles.reviewButton}
                     onPress={() => navigateToReview(item)}
                   >
@@ -348,7 +360,7 @@ const OrderItem: React.FC<OrderItemProps> = ({
                           : "Xem Đánh giá"}
                       </Text>
                     )}
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
               </View>
             </View>
@@ -369,7 +381,9 @@ const OrderItem: React.FC<OrderItemProps> = ({
           </Text>
         </View>
         <View style={styles.row}>
-          <Text style={[styles.totalLabel, { fontWeight: "bold" }]}>Thành tiền:</Text>
+          <Text style={[styles.totalLabel, { fontWeight: "bold" }]}>
+            Thành tiền:
+          </Text>
           <Text
             style={[styles.totalText, { fontWeight: "bold", color: "red" }]}
           >
@@ -379,6 +393,29 @@ const OrderItem: React.FC<OrderItemProps> = ({
       </View>
 
       <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.reviewButton}
+          onPress={() => navigateToReviewAll(order)}
+        >
+          {hasNotReviewedAll && (
+            <Text style={styles.reviewButtonText}>
+              {language === "en"
+                ? "Review"
+                : language === "ko"
+                ? "리뷰"
+                : "Đánh giá"}
+            </Text>
+          )}
+          {hasReviewedAll && (
+            <Text style={styles.detailButtonText}>
+              {language === "en"
+                ? "Review"
+                : language === "ko"
+                ? "리뷰"
+                : "Xem Đánh giá"}
+            </Text>
+          )}
+        </TouchableOpacity>
         {order.status === OrderEnum.NEW && (
           <TouchableOpacity
             style={[styles.button, styles.refundButton]}
@@ -564,23 +601,23 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 10,
     elevation: 2,
   },
   row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 4,
   },
   totalLabel: {
     fontSize: 15,
-    color: '#757575',
+    color: "#757575",
   },
   totalText: {
     fontSize: 15,
-    color: '#000',
+    color: "#000",
   },
   buttonContainer: {
     flexDirection: "row",

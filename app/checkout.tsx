@@ -9,6 +9,7 @@ import {
   Image,
   TextInput,
   Modal,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -27,6 +28,8 @@ import Toast from "react-native-toast-message";
 import ToastHelper from "@/utils/ToastHelper";
 import { Voucher } from "@/models/Voucher";
 import { TouchableWithoutFeedback } from "react-native";
+import { set } from "date-fns";
+import { API_BASE_URL } from "../constants/apiConfig";
 
 export default function CheckoutScreen() {
   const { translation, colors } = useSettings();
@@ -37,6 +40,7 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const [cartId, setCartId] = useState<number | null>(null);
   const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
   const [selectedMethod, setSelectedMethod] = useState("Choose payment method");
   const [modalVisible, setModalVisible] = useState(false);
   const [voucherModalVisible, setVoucherModalVisible] = useState(false);
@@ -44,6 +48,7 @@ export default function CheckoutScreen() {
   const [user, setUser] = useState<any>(null);
   const [voucherList, setVoucherList] = useState<Voucher[]>([]);
   const { handleGetVouchers } = useVoucher();
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
     userInfo()
@@ -58,11 +63,28 @@ export default function CheckoutScreen() {
   }, []);
 
   useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     const fetchVouchers = async () => {
       if (!user?.id) return; // Chưa có user.id thì bỏ qua
 
       try {
         const vouchers = await handleGetVouchers(user.id);
+        console.log("Fetched vouchers:", user.id);
         setVoucherList(vouchers ?? []);
       } catch (error) {
         console.error("Error fetching vouchers:", error);
@@ -83,7 +105,7 @@ export default function CheckoutScreen() {
         }
 
         const response = await fetch(
-          "http://localhost:8080/api/v1/cart/my-cart",
+          `${API_BASE_URL}/cart/my-cart`,
           {
             method: "GET",
             headers: {
@@ -105,7 +127,7 @@ export default function CheckoutScreen() {
           const items = data.orderItems.map((item: any) => ({
             id: item.product?.id,
             name: item.product?.plant.name,
-            price: item.currentPrice,
+            price: item.discounted,
             quantity: item.qty,
             image: item.product?.plant.img,
           }));
@@ -136,6 +158,10 @@ export default function CheckoutScreen() {
       ToastHelper.showError("Lỗi thanh toán", "Vui lòng nhập địa chỉ!!");
       return;
     }
+    if (!phone.trim()) {
+      ToastHelper.showError("Lỗi thanh toán", "Vui lòng nhập số điện thoại!!");
+      return;
+    }
 
     try {
       if (!cartId) throw new Error("Cart ID is required");
@@ -145,7 +171,8 @@ export default function CheckoutScreen() {
         cartId,
         address,
         paymentType,
-        selectedVoucher?.id ?? 0
+        selectedVoucher?.id ?? 0,
+        phone
       );
 
       if (!!response) {
@@ -172,10 +199,11 @@ export default function CheckoutScreen() {
 
   const minOrderAmount = selectedVoucher?.minOrderAmount || 0;
   const finalAmount = totalAmount - discountAmount;
-  const amountToPay = finalAmount >= minOrderAmount ? finalAmount : minOrderAmount;
+  const amountToPay =
+    finalAmount >= minOrderAmount ? finalAmount : minOrderAmount;
   const adjustedDiscountAmount = amountToPay > totalAmount ? 0 : discountAmount;
   const finalAmountWithAdjustedDiscount = totalAmount - adjustedDiscountAmount;
-  const savedPrice = totalAmount -finalAmountWithAdjustedDiscount;
+  const savedPrice = totalAmount - finalAmountWithAdjustedDiscount;
 
   return (
     <View style={styles.container}>
@@ -203,7 +231,10 @@ export default function CheckoutScreen() {
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       style={styles.voucherItem}
-                      onPress={() => handleVoucherSelect(item)}
+                      onPress={() => {
+                        handleVoucherSelect(item);
+                        setVoucherModalVisible(false);
+                      }}
                     >
                       <Text style={styles.voucherCode}>{item.code}</Text>
                       <Text style={styles.voucherDesc}>{item.description}</Text>
@@ -274,6 +305,15 @@ export default function CheckoutScreen() {
             onChangeText={setAddress}
           />
         </View>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Phone Number</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your phone number"
+            value={phone}
+            onChangeText={setPhone}
+          />
+        </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Payment method</Text>
@@ -327,20 +367,25 @@ export default function CheckoutScreen() {
           </Modal>
         </View>
       </View>
-      <View style={styles.footerContainer}>
-        <View style={styles.priceInfoContainer}>
-          <Text style={styles.totalPrice}>
-            Total Payment: {finalAmountWithAdjustedDiscount.toLocaleString()} đ
-          </Text>
-          <Text style={styles.savedAmount}>Saved: {savedPrice.toLocaleString()} đ</Text>
+      {!isKeyboardVisible && (
+        <View style={styles.footerContainer}>
+          <View style={styles.priceInfoContainer}>
+            <Text style={styles.totalPrice}>
+              Total Payment: {finalAmountWithAdjustedDiscount.toLocaleString()}{" "}
+              đ
+            </Text>
+            <Text style={styles.savedAmount}>
+              Saved: {savedPrice.toLocaleString()} đ
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.paymentButton}
+            onPress={handleCheckoutPress}
+          >
+            <Text style={styles.paymentText}>Payment</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.paymentButton}
-          onPress={handleCheckoutPress}
-        >
-          <Text style={styles.paymentText}>Payment</Text>
-        </TouchableOpacity>
-      </View>
+      )}
       <Toast />
     </View>
   );
@@ -616,11 +661,11 @@ const styles = StyleSheet.create({
   },
   priceInfoContainer: {
     marginBottom: 10,
-    alignItems: 'flex-start', // hoặc 'center' nếu muốn căn giữa
+    alignItems: "flex-start", // hoặc 'center' nếu muốn căn giữa
   },
-  
+
   savedAmount: {
     fontSize: 14,
-    color: 'green',
+    color: "green",
   },
 });

@@ -46,15 +46,15 @@ export default function ProductCard({ product, colors, onPress }: ProductCardPro
           {product.discount > 0 ? (
             <>
               <Text style={[styles.discountedPrice, { color: colors.primary }]}>
-                ${(product.price - (product.price)*(product.discount/100)).toFixed(2)}
+                {(product.price - (product.price)*(product.discount/100)).toFixed(2)} đ
               </Text>
               <Text style={[styles.originalPrice, { color: colors.text3 }]}>
-                ${product.price.toFixed(2)}
+                {product.price.toFixed(2)} đ
               </Text>
             </>
           ) : (
             <Text style={[styles.price, { color: colors.primary }]}>
-              ${product.price.toFixed(2)}
+              {product.price.toFixed(2)} đ
             </Text>
           )}
         </View>

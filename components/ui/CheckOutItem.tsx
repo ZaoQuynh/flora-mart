@@ -21,7 +21,7 @@ const CartItem: React.FC<CartItemProps> = ({ cartId, item }) => {
       <View style={styles.itemInfo}>
         <Text style={styles.itemName}>{item.name}</Text>
         <Text style={styles.itemPrice}>
-          {(item.price * item.quantity).toLocaleString()} $
+          {(item.price * item.quantity).toLocaleString()} đ
         </Text>
       </View>
 
