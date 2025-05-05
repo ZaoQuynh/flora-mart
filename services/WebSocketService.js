@@ -2,7 +2,7 @@
 import { Client } from '@stomp/stompjs';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@/constants/Config';
+import { API_URL } from '@/constants/apiConfig';
 
 class WebSocketService {
   constructor() {
