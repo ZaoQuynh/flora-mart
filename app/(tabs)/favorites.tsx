@@ -1,18 +1,42 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, StyleSheet, FlatList, SafeAreaView } from 'react-native';
+import { Text, View, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import HomeHeader from '@/components/ui/HomeHeader';
 import useSettings from '@/hooks/useSettings';
-import { useAuth } from '@/hooks/useAuth';
-import { User } from '@/models/User';
 import { Product } from '@/models/Product';
+import ProductList from '@/components/ui/ProductList';
+import { useFavorite } from '@/hooks/useFavorite';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function FavoritesScreen() {
   const { translation, colors } = useSettings();
+  const [favorites, setFavorites] = useState<Product[] | null >([]);
   const { userInfo } = useAuth();
-  const [user, setUser] = useState<User | null>(null);
-  const [favorites, setFavorites] = useState<Product[]>([]);
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [userId, setUserId] = useState<number | null>(null);
+  const { handleGetFavorites } = useFavorite(); 
+
+  useEffect(() => {
+    userInfo().then(data => {
+      if (data) setUserId(data.id);
+    });
+  }, []);
+
+  const fetchFavorites = async () => {
+
+    if (!userId) return; 
+
+    try {
+      const favoriteProducts = await handleGetFavorites(userId);
+      setFavorites(favoriteProducts);
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+    }
+  };
+
+   useEffect(() => {
+      if (userId) {
+        fetchFavorites();
+      }
+    }, [favorites, userId]);
 
   return (
     <View style={styles.container}>
@@ -21,8 +45,11 @@ export default function FavoritesScreen() {
         <Text style={[styles.headerText, { color: colors.text3 }]}>
           {translation.myFavorites || 'My Favorites'}
         </Text>
+
         
-        {favorites.length === 0 ? (
+        <ScrollView style={styles.scrollView}>
+        
+        {favorites && favorites.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="heart" size={80} color={colors.text3} style={{ opacity: 0.5 }} />
             <Text style={[styles.emptyStateText, { color: colors.text2 }]}>
@@ -30,18 +57,16 @@ export default function FavoritesScreen() {
             </Text>
           </View>
         ) : (
-          <FlatList
-            data={favorites}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.favoriteItem}>
-                {/* Favorite item rendering */}
-              </View>
-            )}
-            numColumns={2}
-            columnWrapperStyle={styles.favoritesGrid}
-          />
+          <ProductList
+              products={favorites || []}
+              colors={colors}
+              translation={translation}
+              title={""}
+              initialSize={10}
+            />
         )}
+        
+      </ScrollView>
       </View>
     </View>
   );
@@ -52,9 +77,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f8f8',
   },
+  
+  scrollView: {
+    flex: 1,
+  },
   content: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   headerText: {
     fontSize: 24,

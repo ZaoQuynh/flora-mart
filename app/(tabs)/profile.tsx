@@ -1,10 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { Text, View, StyleSheet, TouchableOpacity, Image, ScrollView, SafeAreaView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import useSettings from '@/hooks/useSettings';
-import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'expo-router';
-import { User } from '@/models/User';
+import React, { useEffect, useState } from "react";
+import {
+  Text,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  SafeAreaView,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import useSettings from "@/hooks/useSettings";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "expo-router";
+import { User } from "@/models/User";
 
 export default function ProfileScreen() {
   const { translation, colors } = useSettings();
@@ -35,10 +43,18 @@ export default function ProfileScreen() {
 
   const navigateToInformation = () => {
     router.push("/(profile)/information");
-  }
+  };
 
   const navigateToOrders = () => {
-    router.push("/(profile)/orders");
+    router.push("/(order)/history");
+  };
+
+  const navigateToPurchaseHistory = () => {
+    router.push("/(order)/purchaseHistory");
+  };
+
+  const navigateRecentViewed = () => {
+    router.push("/(products)/recentlyViewed");
   };
 
   const navigateToAddresses = () => {
@@ -53,36 +69,48 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <Text style={[styles.headerTitle, { color: colors.background }]}>
-          {translation.profile || 'Profile'}
+          {translation.profile || "Profile"}
         </Text>
       </View>
-      
+
       <ScrollView style={styles.scrollView}>
         <View style={[styles.userInfo, { backgroundColor: colors.background }]}>
           <View style={styles.userAvatar}>
             {user?.avatar ? (
               <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
             ) : (
-              <View style={[styles.avatarPlaceholder, { backgroundColor: colors.text3 }]}>
-                <Text style={[styles.avatarInitial, { color: colors.background }]}>
-                  {user?.fullName ? user.fullName.charAt(0).toUpperCase() : '?'}
+              <View
+                style={[
+                  styles.avatarPlaceholder,
+                  { backgroundColor: colors.text3 },
+                ]}
+              >
+                <Text
+                  style={[styles.avatarInitial, { color: colors.background }]}
+                >
+                  {user?.fullName ? user.fullName.charAt(0).toUpperCase() : "?"}
                 </Text>
               </View>
             )}
           </View>
           <Text style={[styles.userName, { color: colors.text3 }]}>
-            {user?.fullName || translation.guest || 'Guest'}
+            {user?.fullName || translation.guest || "Guest"}
           </Text>
           <Text style={[styles.userEmail, { color: colors.text2 }]}>
-            {user?.email || ''}
+            {user?.email || ""}
           </Text>
         </View>
 
-        <View style={[styles.menuSection, { backgroundColor: colors.background }]}>
-          <TouchableOpacity style={styles.menuItem} onPress={navigateToInformation}>
+        <View
+          style={[styles.menuSection, { backgroundColor: colors.background }]}
+        >
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={navigateToInformation}
+          >
             <Ionicons name="person-outline" size={24} color={colors.text3} />
             <Text style={[styles.menuItemText, { color: colors.text3 }]}>
-              {translation.myInformation || 'My Information'}
+              {translation.myInformation || "My Information"}
             </Text>
             <Ionicons name="chevron-forward" size={20} color={colors.text3} />
           </TouchableOpacity>
@@ -90,34 +118,62 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.menuItem} onPress={navigateToOrders}>
             <Ionicons name="bag-outline" size={24} color={colors.text3} />
             <Text style={[styles.menuItemText, { color: colors.text3 }]}>
-              {translation.myOrders || 'My Orders'}
+              {translation.myOrders || "My Orders"}
             </Text>
             <Ionicons name="chevron-forward" size={20} color={colors.text3} />
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.menuItem} onPress={navigateToAddresses}>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={navigateToPurchaseHistory}
+          >
+            <Ionicons name="receipt-outline" size={24} color={colors.text3} />
+            <Text style={[styles.menuItemText, { color: colors.text3 }]}>
+              {translation.purchaseHistory || "Purchase"}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.text3} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={navigateRecentViewed}
+          >
+            <Ionicons name="timer-outline" size={24} color={colors.text3} />
+            <Text style={[styles.menuItemText, { color: colors.text3 }]}>
+              {translation.recentlyViewed || "Recently Viewed "}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.text3} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={navigateToAddresses}
+          >
             <Ionicons name="location-outline" size={24} color={colors.text3} />
             <Text style={[styles.menuItemText, { color: colors.text3 }]}>
-              {translation.myAddresses || 'My Addresses'}
+              {translation.myAddresses || "My Addresses"}
             </Text>
             <Ionicons name="chevron-forward" size={20} color={colors.text3} />
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.menuItem} onPress={navigateToSettings}>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={navigateToSettings}
+          >
             <Ionicons name="settings-outline" size={24} color={colors.text3} />
             <Text style={[styles.menuItemText, { color: colors.text3 }]}>
-              {translation.settings || 'Settings'}
+              {translation.settings || "Settings"}
             </Text>
             <Ionicons name="chevron-forward" size={20} color={colors.text3} />
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.logoutButton, { backgroundColor: colors.primary }]}
           onPress={onLogout}
         >
           <Text style={[styles.logoutText, { color: colors.background }]}>
-            {translation.logoutButtonText || 'Logout'}
+            {translation.logoutButtonText || "Logout"}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -128,22 +184,22 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
   },
   header: {
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   scrollView: {
     flex: 1,
   },
   userInfo: {
     padding: 20,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 16,
   },
   userAvatar: {
@@ -151,25 +207,25 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     marginBottom: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   avatarImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   avatarPlaceholder: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   avatarInitial: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   userName: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 4,
   },
   userEmail: {
@@ -179,14 +235,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 16,
     marginBottom: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   menuItemText: {
     flex: 1,
@@ -197,11 +253,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     padding: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   logoutText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

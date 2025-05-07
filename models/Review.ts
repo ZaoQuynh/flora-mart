@@ -4,7 +4,7 @@ export interface Review {
     id: number;
     customer: User;
     rate: number;
-    commnent: string;
+    comment: string;
     feedback: string;
     date: Date;
 }

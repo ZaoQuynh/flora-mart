@@ -7,49 +7,185 @@ import {
   StyleSheet, 
   ScrollView, 
   TouchableOpacity, 
-  TextInput 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { useCart } from "@/hooks/useCart";
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Product } from '@/models/Product';
 import { useDescriptionGroup } from '@/hooks/useDescriptionGroup';
 import { DescriptionGroup } from '@/models/DescriptionGroup';
+import ToastHelper from '@/utils/ToastHelper';
+import { Review } from '@/models/Review';
+import { useReview } from '@/hooks/useReview';
+import { useFavorite } from '@/hooks/useFavorite';
+import { useAuth } from '@/hooks/useAuth';
+import { useProduct } from '@/hooks/useProduct';
+import ProductList from '@/components/ui/ProductList';
+import useSettings from '@/hooks/useSettings';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Strings from '@/constants/Strings';
 
 const ProductDetailsScreen = () => {
+  const { language, theme, translation, colors } = useSettings();
   const params = useLocalSearchParams();
-  const navigation = useNavigation();  
-  const route = useRoute();           
+  const navigation = useNavigation();            
   const { handleGetDescriptionGroups } = useDescriptionGroup();
-  const [descriptionGroups, setDescriptionGroup] = useState<DescriptionGroup[]>([]); 
+  const [descriptionGroups, setDescriptionGroup] = useState<DescriptionGroup[] | null>(null);
+  const { handleAddToCart, handleGetCartId } = useCart();
   const [product, setProduct] = useState<Product | null>(null); 
-  const [newComment, setNewComment] = useState(''); 
+  const [reviews, setReviews] = useState<Review[] | null>([]); 
+  const [userId, setUserId] = useState<number | null>(null);
+  const [totalRate, setTotalRate] = useState<number>(0); 
+  const {handleGetReviews} = useReview();
+  const {userInfo} = useAuth();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const { handleAddToFavorites, handleRemoveFromFavorites, handleCheckFavorite } = useFavorite(); // Assuming you have these functions in your useReview hook
+  const { handleFindTop10SimilarProducts, handleAddToRecentlyViewed } = useProduct();
+  const [similarProducts, setSimilarProducts] = useState<Product[] | null>([]);
+  const [cartId, setCartId] = useState()
+
+  const fetchReviews = async (product: Product) => {
+    try {
+      const reviews = await handleGetReviews(product.id); 
+      setReviews(reviews);
+      if(reviews) {
+        const total = reviews.reduce((acc, review) => acc + review.rate, 0);
+        const average = total / reviews.length;
+        setTotalRate(average);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    }
+  };
+
+  const fetchSimilarProducts = async () => {
+    try {
+      const similarProducts = await handleFindTop10SimilarProducts(product!!.id); 
+      setSimilarProducts(similarProducts);
+    }
+    catch (error) {
+      console.error("Error fetching similar products:", error);
+    }
+  }
+
+  const checkFavorite = async (productId: number) => {
+
+    if (!userId) {
+      ToastHelper.showError('Something went wrong', 'Please try again later!');
+      return;
+    }
+
+    try {
+      const response = await handleCheckFavorite(productId, userId); 
+      setIsFavorite(response);
+    } catch (error) {
+      console.error("Error checking favorite:", error);
+    }
+  }
+  
+  const toggleFavorite = async () => {
+    if (!userId || !product) {
+      ToastHelper.showError('Something went wrong', 'Please try again later!');
+      return;
+    }
+  
+    const previousState = isFavorite;
+    const newState = !isFavorite;
+  
+    setIsFavorite(newState);
+  
+    try {
+      if (newState) {
+        await handleAddToFavorites(product.id, userId);
+      } else {
+        await handleRemoveFromFavorites(product.id, userId);
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+  
+      setIsFavorite(previousState);
+      ToastHelper.showError('Oops!', 'Something went wrong while updating favorite');
+    }
+  };
+  
 
   useEffect(() => {
+    userInfo().then(data => {
+      if (data) setUserId(data.id);
+    });
+  }, []);
+  
+  useEffect(() => {
     try {
-      const productParam = Array.isArray(params.product) ? params.product[0] : params.product;
-      const product: Product | null = productParam ? JSON.parse(productParam) : null;
-      setProduct(product);
+      const productParam = Array.isArray(params.product)
+        ? params.product[0]
+        : params.product;
+      const parsedProduct: Product | null = productParam ? JSON.parse(productParam) : null;
+  
+      setProduct(parsedProduct);
+  
+      if (parsedProduct) {
+        fetchReviews(parsedProduct); 
+        handleAddToRecentlyViewed(parsedProduct.id);
+      }
     } catch (error) {
-      console.error("Lỗi khi parse dữ liệu sản phẩm:", error);
+      console.error("Error parsing product data:", error);
       setProduct(null);
     }
   }, [params.product]);
-
+  
+  useEffect(() => {
+    if (product && userId) {
+      checkFavorite(product.id);
+      fetchSimilarProducts(); 
+    }
+  }, [product, userId]);
+  
   useEffect(() => {
     const fetchDescriptionGroups = async () => {
       try {
-        const descriptionGroup = await handleGetDescriptionGroups();
+        const descriptionGroup = await handleGetDescriptionGroups();  
         setDescriptionGroup(descriptionGroup);
       } catch (error) {
         console.error("Lỗi khi lấy nhóm mô tả:", error);
       }
     };
-    
+  
     fetchDescriptionGroups();
-  }, [handleGetDescriptionGroups]);
+  }, []); 
+
+  // useEffect(() => {
+  //   const fetchCart = async () => {
+  //     try {
+  //       const cart = await handleGetCartId();  
+  //       setCartId(cart.id);
+  //     } catch (error) {
+  //       console.error("Lỗi khi lấy cart id:", error);
+  //     }
+  //   };
+  
+  //   fetchCart();
+  // }, []); 
+  
+
+  const handleAddToCartPress = async () => {
+    try {
+      const cartId = await handleGetCartId();
+      const response = handleAddToCart(product!!.id, cartId);
+      
+      if (!!response) {
+        router.push("/cart");
+      } else {
+        ToastHelper.showError('Lỗi thanh toán','Vui lòng nhập thử lại!')
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      alert("An error occurred during checkout.");
+    }
+  };
 
   if (!product) {
     return (
@@ -75,10 +211,12 @@ const ProductDetailsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer}>
         <View style={styles.imageContainer}>
           <Image source={{ uri: product.plant.img }} style={styles.productImage} />
         </View>
+
+        <View style={styles.mainContent}>
 
         <View style={styles.chipsContainer}>
           {attributes.map((attribute, index) => (
@@ -102,15 +240,21 @@ const ProductDetailsScreen = () => {
               )}
             </View>
             <View style={styles.favoriteContainer}>
-              <Ionicons name="heart-outline" size={20} color="#666" />
-              <Text style={styles.favoriteText}>| Đã bán: {product.stockQty}</Text>
+            <TouchableOpacity onPress={toggleFavorite}>
+              <Ionicons
+                name={isFavorite ? 'heart' : 'heart-outline'}
+                size={20}
+                color={isFavorite ? 'red' : '#666'}
+              />
+            </TouchableOpacity>
+              <Text style={styles.stockQtyText}>| Đã bán: {product.stockQty}</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Mô tả</Text>
-          {descriptionGroups.map((group, index) => (
+          {descriptionGroups&&descriptionGroups.map((group, index) => (
             <View key={index} style={styles.descriptionGroup}>
               <View style={styles.descriptionGroupHeader}>
                 <Ionicons 
@@ -136,17 +280,17 @@ const ProductDetailsScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Đánh giá</Text>
           <View style={styles.ratingStars}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Ionicons 
-                key={star} 
-                name="star" 
-                size={24} 
-                color="#FFCE31" 
-              />
-            ))}
-          </View>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Ionicons
+          key={star}
+          name="star"
+          size={24}
+          color={star <= totalRate ? "#FFCE31" : "#CCCCCC"} // vàng nếu star <= rate, xám nếu không
+        />
+      ))}
+    </View>
 
-          {product.reviews.map((review, index) => (
+          {reviews && reviews.map((review, index) => (
             <View key={index} style={styles.reviewItem}>
               <View style={styles.reviewHeader}>
                 <View style={styles.reviewUser}>
@@ -167,17 +311,24 @@ const ProductDetailsScreen = () => {
                 <Text style={styles.reviewTime}>
                   {review.date ? format(new Date(review.date), 'HH:mm | dd/MM/yyyy') : 'Không có ngày'}
                 </Text>
-                <Text style={styles.reviewText}>{review.commnent || 'Không có bình luận'}</Text>
+                <Text style={styles.reviewText}>{review.comment || 'Không có bình luận'}</Text>
               </View>
             </View>
           ))}
-
-        </View>
+        </View>       
+        <ProductList
+            products={similarProducts || []} 
+            colors={colors} 
+            translation={translation} 
+            title={translation.relatedProducts || 'Related Products'}
+            initialSize={5}
+          />
+          </View>
       </ScrollView>
 
       {/* Nút thêm vào giỏ hàng */}
       <View style={styles.bottomButton}>
-        <TouchableOpacity style={styles.addToCartButton}>
+        <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCartPress}>
           <Text style={styles.addToCartText}>Thêm vào giỏ hàng</Text>
         </TouchableOpacity>
       </View>
@@ -205,7 +356,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     color: '#AABC8C',
-    fontWeight: '500',
+    fontWeight: 'bold',
   },
   cartButton: {
     padding: 5,
@@ -223,7 +374,6 @@ const styles = StyleSheet.create({
   chipsContainer: {
     flexDirection: 'row',
     marginTop: 10,
-    paddingHorizontal: 15,
   },
   chip: {
     backgroundColor: '#F5F5F5',
@@ -239,7 +389,6 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   productInfo: {
-    paddingHorizontal: 15,
     paddingVertical: 12,
   },
   productName: {
@@ -272,13 +421,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  favoriteText: {
+  stockQtyText: {
     fontSize: 14,
     color: '#666',
     marginLeft: 5,
   },
   section: {
-    paddingHorizontal: 15,
     paddingVertical: 10,
     borderTopWidth: 5,
     borderTopColor: '#F5F5F5',
@@ -392,26 +540,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
-  commentInputContainer: {
-    marginTop: 10,
-    marginBottom: 60,
-  },
-  commentInput: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 25,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#333',
-  },
   bottomButton: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 15,
     paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
@@ -426,6 +560,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  scrollContainer: {
+    flex: 1,
+    marginBottom: 60, 
+  },
+  mainContent: {
+    paddingHorizontal: 16
   },
 });
 
