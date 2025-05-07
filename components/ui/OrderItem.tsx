@@ -263,9 +263,7 @@ const OrderItem: React.FC<OrderItemProps> = ({
       </View>
     );
   }
-  const hasReviewedAll = order.orderItems.every(
-    (item) => item.review !== null
-  );
+  const hasReviewedAll = order.orderItems.every((item) => item.review !== null);
   const hasNotReviewedAll = order.orderItems.some(
     (item) => item.review === null
   );
@@ -393,29 +391,31 @@ const OrderItem: React.FC<OrderItemProps> = ({
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.reviewButton}
-          onPress={() => navigateToReviewAll(order)}
-        >
-          {hasNotReviewedAll && (
-            <Text style={styles.reviewButtonText}>
-              {language === "en"
-                ? "Review"
-                : language === "ko"
-                ? "리뷰"
-                : "Đánh giá"}
-            </Text>
-          )}
-          {hasReviewedAll && (
-            <Text style={styles.detailButtonText}>
-              {language === "en"
-                ? "Review"
-                : language === "ko"
-                ? "리뷰"
-                : "Xem Đánh giá"}
-            </Text>
-          )}
-        </TouchableOpacity>
+        {order.status === OrderEnum.DELIVERED && (
+          <TouchableOpacity
+            style={styles.reviewButton}
+            onPress={() => navigateToReviewAll(order)}
+          >
+            {hasNotReviewedAll && (
+              <Text style={styles.reviewButtonText}>
+                {language === "en"
+                  ? "Review"
+                  : language === "ko"
+                  ? "리뷰"
+                  : "Đánh giá"}
+              </Text>
+            )}
+            {hasReviewedAll && (
+              <Text style={styles.detailButtonText}>
+                {language === "en"
+                  ? "Review"
+                  : language === "ko"
+                  ? "리뷰"
+                  : "Xem Đánh giá"}
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
         {order.status === OrderEnum.NEW && (
           <TouchableOpacity
             style={[styles.button, styles.refundButton]}
